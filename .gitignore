@@ -1,0 +1,14 @@
+.DS_Store:
+titan.yaml
+
+# IDEs
+.idea
+.vscode
+.zed
+
+# Binaries
+bin/
+
+# Files
+server.crt
+server.key
