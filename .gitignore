@@ -1,14 +1,42 @@
+# OS files
 .DS_Store:
+
+# Config file
 titan.yaml
 
-# IDEs
+# Test files
+server.crt
+server.key
+
+# Editors/IDEs
 .idea
 .vscode
 .zed
 
-# Binaries
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+build/
 bin/
 
-# Files
-server.crt
-server.key
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env

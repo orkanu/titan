@@ -32,7 +32,11 @@ func (fa FetchAction) Execute(repoPath string, projectName string, env []string)
 	script := fmt.Sprintf(`#!/bin/bash
 		set -e
 		echo 'FETCH ACTION in %v'
-		node -v
-		pnpm -v`, projectName)
-	return utils.ExecScript(script, env)
+		cd %v
+		git fetch -p && git pull
+  		git fetch --tags --force && git fetch --prune --prune-tags`, projectName, repoPath)
+	if err := utils.ExecScript(script, env); err != nil {
+		return fmt.Errorf("Error executing fetch action script: %v", err)
+	}
+	return nil
 }

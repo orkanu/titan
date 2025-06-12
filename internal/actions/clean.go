@@ -35,10 +35,13 @@ func (ca CleanAction) Execute(repoPath string, projectName string, env []string)
 	script := fmt.Sprintf(`#!/bin/bash
 		set -e
 		echo 'CLEAN ACTION in %v'
-		cd %v
+		# cd %v
 		find $(pwd) -maxdepth 3 -name "node_modules" -type d -exec rm -rf {} +
 		find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
 		%v
 		`, projectName, repoPath, cleanYalc)
-	return utils.ExecScript(script, env)
+	if err := utils.ExecScript(script, env); err != nil {
+		return fmt.Errorf("Error executing clean action script: %v", err)
+	}
+	return nil
 }

@@ -33,5 +33,8 @@ func (ia InstallAction) Execute(repoPath string, projectName string, env []strin
 		echo 'INSTALL ACTION in %v'
 		cd %v
 		pnpm install`, projectName, repoPath)
-	return utils.ExecScript(script, env)
+	if err := utils.ExecScript(script, env); err != nil {
+		return fmt.Errorf("Error executing install action script: %v", err)
+	}
+	return nil
 }

@@ -8,10 +8,11 @@ import (
 	"titan/internal/actions"
 	"titan/internal/config"
 	"titan/internal/utils"
+	"titan/pkg/flags"
 )
 
 func main() {
-	flagsData, err := ParseFlags()
+	flagsData, err := flags.ParseFlags()
 	if err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
 		os.Exit(1)

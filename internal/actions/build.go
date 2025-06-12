@@ -33,5 +33,8 @@ func (ba BuildAction) Execute(repoPath string, projectName string, env []string)
 		echo 'BUILD ACTION in %v'
 		cd %v
 		pnpm run build:local`, projectName, repoPath)
-	return utils.ExecScript(script, env)
+	if err := utils.ExecScript(script, env); err != nil {
+		return fmt.Errorf("Error executing build action script: %v", err)
+	}
+	return nil
 }
