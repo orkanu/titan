@@ -2,8 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"slices"
 	"titan/internal/utils"
 )
@@ -35,20 +33,5 @@ func (ia InstallAction) Execute(repoPath string, projectName string, env []strin
 		echo 'INSTALL ACTION in %v'
 		cd %v
 		pnpm install`, projectName, repoPath)
-	// Write script to temp file
-	tmpFile, err := utils.CreateTempFile("", "install-action-*.sh", script)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmpFile.Name())
-
-	// Execute the script
-	cmd := exec.Command("bash", tmpFile.Name())
-	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
+	return utils.ExecScript(script, env)
 }

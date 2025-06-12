@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -12,11 +12,13 @@ import (
 func main() {
 	flagsData, err := ParseFlags()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Error parsing flags: %v", err)
+		os.Exit(1)
 	}
 	cfg, err := NewConfig(flagsData.ConfigPath)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Error retrieving configuration: %v", err)
+		os.Exit(1)
 	}
 
 	// Slice with all the available actions
@@ -72,9 +74,9 @@ func main() {
 	}
 
 	if len(errors) > 0 {
-		fmt.Println("Some actions failed: ")
+		fmt.Println("\x1b[31;1mSome actions failed:\x1b[0m")
 		for _, err := range errors {
-			fmt.Printf("	- %v\n", err)
+			fmt.Printf("\x1b[31;1m  - %v\x1b[0m\n", err)
 		}
 	} else {
 		fmt.Println("All actions completed successfully")

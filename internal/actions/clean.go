@@ -2,8 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"slices"
 	"titan/internal/utils"
 )
@@ -42,21 +40,5 @@ func (ca CleanAction) Execute(repoPath string, projectName string, env []string)
 		find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
 		%v
 		`, projectName, repoPath, cleanYalc)
-	// Write script to temp file
-	tmpFile, err := utils.CreateTempFile("", "clean-action-*.sh", script)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmpFile.Name())
-
-	// Execute the script
-	cmd := exec.Command("bash", tmpFile.Name())
-	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	return utils.ExecScript(script, env)
 }
