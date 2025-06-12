@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"titan/internal/utils"
 )
 
 type Flags struct {
+	Command    utils.Command
 	ConfigPath string
 }
 
@@ -41,19 +43,78 @@ func ValidateConfigPath(path string) error {
 // ParseFlags will create and parse the CLI flags
 // For now it returns the path to config file to be used
 func ParseFlags() (*Flags, error) {
+	flagsData := &Flags{}
 	// String that contains the configured configuration path
 	var configPath string
-	// Subcommands https://gobyexample.com/command-line-subcommands
 	flag.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
 
-	// Actually parse the flags
-	flag.Parse()
+	// (fetch) subcommand
+	fetchCmd := flag.NewFlagSet("fetch", flag.ExitOnError)
+	fetchCmd.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
+	// (install) subcommand
+	installCmd := flag.NewFlagSet("install", flag.ExitOnError)
+	installCmd.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
+	// (build) subcommand
+	buildCmd := flag.NewFlagSet("build", flag.ExitOnError)
+	buildCmd.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
+	// (clean) subcommand
+	cleanCmd := flag.NewFlagSet("clean", flag.ExitOnError)
+	cleanCmd.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
+	// (all) subcommand
+	allCmd := flag.NewFlagSet("all", flag.ExitOnError)
+	allCmd.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
+
+	if len(os.Args) > 1 {
+		// Parse flags based on command
+		switch os.Args[1] {
+		case "fetch":
+			fetchCmd.Parse(os.Args[2:])
+			// fmt.Println("subcommand 'fetch'")
+			// fmt.Println("  config:", configPath)
+			// fmt.Println("  tail:", fetchCmd.Args())
+			flagsData.Command = utils.FETCH
+		case "install":
+			installCmd.Parse(os.Args[2:])
+			// fmt.Println("subcommand 'install'")
+			// fmt.Println("  config:", configPath)
+			// fmt.Println("  tail:", installCmd.Args())
+			flagsData.Command = utils.INSTALL
+		case "build":
+			buildCmd.Parse(os.Args[2:])
+			// fmt.Println("subcommand 'build'")
+			// fmt.Println("  config:", configPath)
+			// fmt.Println("  tail:", buildCmd.Args())
+			flagsData.Command = utils.BUILD
+		case "clean":
+			cleanCmd.Parse(os.Args[2:])
+			// fmt.Println("subcommand 'clean'")
+			// fmt.Println("  config:", configPath)
+			// fmt.Println("  tail:", cleanCmd.Args())
+			flagsData.Command = utils.CLEAN
+		case "all":
+			allCmd.Parse(os.Args[2:])
+			// fmt.Println("subcommand 'all'")
+			// fmt.Println("  config:", configPath)
+			// fmt.Println("  tail:", allCmd.Args())
+			flagsData.Command = utils.ALL
+		default:
+			fmt.Println("No valid subcommand received, assuming [all]")
+			// would this work?
+			flag.Parse()
+			flagsData.Command = utils.ALL
+		}
+	} else {
+		fmt.Println("No subcommand received, assuming [all]")
+		flag.Parse()
+		flagsData.Command = utils.ALL
+	}
 
 	// Validate the path first
 	if err := ValidateConfigPath(configPath); err != nil {
 		return &Flags{}, err
 	}
+	flagsData.ConfigPath = configPath
 
 	// Return the configuration path
-	return &Flags{ConfigPath: configPath}, nil
+	return flagsData, nil
 }
