@@ -30,17 +30,16 @@ func (ca CleanAction) Execute(repoPath string, projectName string, env []string)
 	// create temp shell script
 	cleanYalc := ""
 	if projectName == "cbs-residential-web" {
-		cleanYalc = "echo YALK"
+		cleanYalc = "rm -rf ~/.yalc/packages/@wavelength"
 	}
 	script := fmt.Sprintf(`#!/bin/bash
 		set -e
-		echo 'CLEAN ACTION in %v'
-		# cd %v
 		find $(pwd) -maxdepth 3 -name "node_modules" -type d -exec rm -rf {} +
 		find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
 		%v
-		`, projectName, repoPath, cleanYalc)
-	if err := utils.ExecScript(script, env); err != nil {
+		`, cleanYalc)
+	fmt.Printf("Action [clean] on project [%v]\n", projectName)
+	if err := utils.ExecScript(script, env, repoPath); err != nil {
 		return fmt.Errorf("Error executing clean action script: %v", err)
 	}
 	return nil

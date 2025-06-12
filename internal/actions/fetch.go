@@ -29,13 +29,12 @@ func (fa FetchAction) ShouldExecute(command utils.Command) bool {
 
 func (fa FetchAction) Execute(repoPath string, projectName string, env []string) error {
 	// create temp shell script
-	script := fmt.Sprintf(`#!/bin/bash
+	script := `#!/bin/bash
 		set -e
-		echo 'FETCH ACTION in %v'
-		cd %v
 		git fetch -p && git pull
-  		git fetch --tags --force && git fetch --prune --prune-tags`, projectName, repoPath)
-	if err := utils.ExecScript(script, env); err != nil {
+  		git fetch --tags --force && git fetch --prune --prune-tags`
+	fmt.Printf("Action [fetch] on project [%v]\n", projectName)
+	if err := utils.ExecScript(script, env, repoPath); err != nil {
 		return fmt.Errorf("Error executing fetch action script: %v", err)
 	}
 	return nil

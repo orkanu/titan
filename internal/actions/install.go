@@ -27,13 +27,9 @@ func (ia InstallAction) ShouldExecute(command utils.Command) bool {
 }
 
 func (ia InstallAction) Execute(repoPath string, projectName string, env []string) error {
-	// create temp shell script
-	script := fmt.Sprintf(`#!/bin/bash
-		set -e
-		echo 'INSTALL ACTION in %v'
-		cd %v
-		pnpm install`, projectName, repoPath)
-	if err := utils.ExecScript(script, env); err != nil {
+	options := utils.NewExecCommandOptions(env, repoPath, "pnpm", "install", "--frozen-lockfile", "--prefer-offline")
+	fmt.Printf("Action [install] on project [%v]\n", projectName)
+	if err := utils.ExecCommand(options); err != nil {
 		return fmt.Errorf("Error executing install action script: %v", err)
 	}
 	return nil

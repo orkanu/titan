@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strings"
 )
 
 // CreateTempFile creates a temporary file for the given directory, name and contents
@@ -23,4 +24,12 @@ func CreateTempFile(dir string, namePattern string, fileContents string) (*os.Fi
 		return nil, err
 	}
 	return tmpFile, nil
+}
+
+func getPathWithUserHome(dir string) string {
+	if strings.HasPrefix(dir, "~") {
+		home, _ := os.UserHomeDir()
+		return home + strings.TrimPrefix(dir, "~")
+	}
+	return dir
 }
