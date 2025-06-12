@@ -11,5 +11,5 @@ type Action interface {
 	// ShouldExecute evaluates is the action has to be executed based on the command requested
 	ShouldExecute(command utils.Command) bool
 	// Execute executes the action
-	Execute(repoPath string, env []string)
+	Execute(repoPath string, projectName string, env []string) error
 }

@@ -28,19 +28,24 @@ func (ca CleanAction) ShouldExecute(command utils.Command) bool {
 	return slices.Contains(ca.commands, command)
 }
 
-func (ca CleanAction) Execute(repoPath string, env []string) {
+func (ca CleanAction) Execute(repoPath string, projectName string, env []string) error {
 	// create temp shell script
-	script := `#!/bin/bash
-set -e
-echo 'CLEAN ACTION'
-node -v
-pnpm -v
-`
+	cleanYalc := ""
+	if projectName == "cbs-residential-web" {
+		cleanYalc = "echo YALK"
+	}
+	script := fmt.Sprintf(`#!/bin/bash
+		set -e
+		echo 'CLEAN ACTION in %v'
+		cd %v
+		find $(pwd) -maxdepth 3 -name "node_modules" -type d -exec rm -rf {} +
+		find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
+		%v
+		`, projectName, repoPath, cleanYalc)
 	// Write script to temp file
 	tmpFile, err := utils.CreateTempFile("", "clean-action-*.sh", script)
 	if err != nil {
-		// TODO need to propagate error. Perhaps via channels?
-		panic(err)
+		return err
 	}
 	defer os.Remove(tmpFile.Name())
 
@@ -50,8 +55,8 @@ pnpm -v
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		// TODO need to propagate error. Perhaps via channels?
-		panic(err)
+		return err
 	}
-	fmt.Printf("Action %v executed on repo %v\n", ca.Name(), repoPath)
+
+	return nil
 }

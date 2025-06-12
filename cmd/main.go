@@ -44,6 +44,7 @@ func main() {
 
 	// Run actions concurrently for each repo
 	var wg sync.WaitGroup
+	errorChan := make(chan error, len(cfg.Repositories))
 	for _, repository := range cfg.Repositories {
 		wg.Add(1)
 		go func() {
@@ -51,12 +52,33 @@ func main() {
 			repoPath := repoFullPath(cfg.BasePath, repository)
 			// Run actions one after the other. Those should be ordered in the array
 			for _, act := range a {
-				act.Execute(repoPath, env)
+				err := act.Execute(repoPath, repository, env)
+				if err != nil {
+					errorChan <- err
+					// Stop procession further actions
+					break
+				}
 			}
 		}()
 	}
 
+	// Wait for all goroutines to complete
 	wg.Wait()
+	close(errorChan)
+
+	var errors []error
+	for err := range errorChan {
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		fmt.Println("Some actions failed: ")
+		for _, err := range errors {
+			fmt.Printf("	- %v\n", err)
+		}
+	} else {
+		fmt.Println("All actions completed successfully")
+	}
 
 	// Get subcomand from flags:
 	// 	(fetch) should fetch and pull from remote for each project

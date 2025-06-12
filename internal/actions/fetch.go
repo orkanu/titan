@@ -2,6 +2,8 @@ package actions
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"slices"
 	"titan/internal/utils"
 )
@@ -27,6 +29,28 @@ func (fa FetchAction) ShouldExecute(command utils.Command) bool {
 	return slices.Contains(fa.commands, command)
 }
 
-func (fa FetchAction) Execute(repoPath string, env []string) {
-	fmt.Printf("Action %v executed on repo %v\n", fa.Name(), repoPath)
+func (fa FetchAction) Execute(repoPath string, projectName string, env []string) error {
+	// create temp shell script
+	script := fmt.Sprintf(`#!/bin/bash
+		set -e
+		echo 'FETCH ACTION in %v'
+		node -v
+		pnpm -v`, projectName)
+	// Write script to temp file
+	tmpFile, err := utils.CreateTempFile("", "fetch-action-*.sh", script)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Execute the script
+	cmd := exec.Command("bash", tmpFile.Name())
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
