@@ -7,17 +7,18 @@ import (
 	"strings"
 	"sync"
 	"titan/internal/actions"
+	"titan/internal/utils"
 )
 
 func main() {
 	flagsData, err := ParseFlags()
 	if err != nil {
-		fmt.Printf("Error parsing flags: %v", err)
+		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
 		os.Exit(1)
 	}
 	cfg, err := NewConfig(flagsData.ConfigPath)
 	if err != nil {
-		fmt.Printf("Error retrieving configuration: %v", err)
+		utils.PrintlnRed(fmt.Sprintf("Error retrieving configuration: %v", err))
 		os.Exit(1)
 	}
 
@@ -40,8 +41,8 @@ func main() {
 	// Setup nvm and pnpm environment
 	env, err := captureEnvironment(cfg.Versions)
 	if err != nil {
-		fmt.Printf("Error setting up environment: %v", err)
-		return
+		utils.PrintlnRed(fmt.Sprintf("Error setting up shared bash environment: %v", err))
+		os.Exit(1)
 	}
 
 	// Run actions concurrently for each repo
@@ -74,10 +75,11 @@ func main() {
 	}
 
 	if len(errors) > 0 {
-		fmt.Println("\x1b[31;1mSome actions failed:\x1b[0m")
+		utils.PrintlnRed("Some actions failed:")
 		for _, err := range errors {
-			fmt.Printf("\x1b[31;1m  - %v\x1b[0m\n", err)
+			utils.PrintlnRed(fmt.Sprintf("  - %v", err))
 		}
+		os.Exit(1)
 	} else {
 		fmt.Println("All actions completed successfully")
 	}
