@@ -69,44 +69,28 @@ func ParseFlags() (*Flags, error) {
 		switch os.Args[1] {
 		case "fetch":
 			fetchCmd.Parse(os.Args[2:])
-			// fmt.Println("subcommand 'fetch'")
-			// fmt.Println("  config:", configPath)
-			// fmt.Println("  tail:", fetchCmd.Args())
 			flagsData.Command = utils.FETCH
 		case "install":
 			installCmd.Parse(os.Args[2:])
-			// fmt.Println("subcommand 'install'")
-			// fmt.Println("  config:", configPath)
-			// fmt.Println("  tail:", installCmd.Args())
 			flagsData.Command = utils.INSTALL
 		case "build":
 			buildCmd.Parse(os.Args[2:])
-			// fmt.Println("subcommand 'build'")
-			// fmt.Println("  config:", configPath)
-			// fmt.Println("  tail:", buildCmd.Args())
 			flagsData.Command = utils.BUILD
 		case "clean":
 			cleanCmd.Parse(os.Args[2:])
-			// fmt.Println("subcommand 'clean'")
-			// fmt.Println("  config:", configPath)
-			// fmt.Println("  tail:", cleanCmd.Args())
 			flagsData.Command = utils.CLEAN
 		case "all":
 			allCmd.Parse(os.Args[2:])
-			// fmt.Println("subcommand 'all'")
-			// fmt.Println("  config:", configPath)
-			// fmt.Println("  tail:", allCmd.Args())
 			flagsData.Command = utils.ALL
 		default:
-			fmt.Println("No valid subcommand received, assuming [all]")
-			// would this work?
-			flag.Parse()
-			flagsData.Command = utils.ALL
+			flag.Usage()
+			// TODO how to unclude all flag set command options?
+			os.Exit(0)
 		}
 	} else {
-		fmt.Println("No subcommand received, assuming [all]")
-		flag.Parse()
-		flagsData.Command = utils.ALL
+		flag.Usage()
+		// TODO how to unclude all flag set command options?
+		os.Exit(0)
 	}
 
 	// Validate the path first
