@@ -23,6 +23,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if flagsData.Command == utils.PROXY_SERVER {
+		fmt.Print("Serve")
+	} else {
+		projectActions(flagsData, cfg)
+	}
+}
+
+func projectActions(flagsData *flags.Flags, cfg *config.Config) {
 	// Slice with all the available actions
 	availableActions := []actions.Action{
 		actions.NewFetchAction(),

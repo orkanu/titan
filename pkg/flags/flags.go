@@ -63,6 +63,9 @@ func ParseFlags() (*Flags, error) {
 	// (all) subcommand
 	allCmd := flag.NewFlagSet("all", flag.ExitOnError)
 	allCmd.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
+	// (serve) subcommand
+	serveCmd := flag.NewFlagSet("serve", flag.ExitOnError)
+	serveCmd.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
 
 	if len(os.Args) > 1 {
 		// Parse flags based on command
@@ -82,6 +85,9 @@ func ParseFlags() (*Flags, error) {
 		case "all":
 			allCmd.Parse(os.Args[2:])
 			flagsData.Command = utils.ALL
+		case "serve":
+			serveCmd.Parse(os.Args[2:])
+			flagsData.Command = utils.PROXY_SERVER
 		default:
 			flag.Usage()
 			// TODO how to unclude all flag set command options?

@@ -6,6 +6,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Server struct {
+	// Host value
+	Host string `yaml:"host"`
+	// Port value
+	Port int `yaml:"port"`
+	// SSL configuration
+	SSL struct {
+		Port int    `yaml:"port"`
+		Cert string `yaml:"cert"`
+		Key  string `yaml:"key"`
+	} `yaml:"ssl"`
+
+	// Routes to proxy to
+	Proxy map[string]struct {
+		Source string `yaml:"source"`
+		Target string `yaml:"target"`
+	} `yaml:"proxy"`
+}
+
 type Versions struct {
 	// Node version to install/use in system via NVM
 	Node string `yaml:"node"`
@@ -21,6 +40,9 @@ type Config struct {
 
 	// List of respositories
 	Repositories map[string]string `yaml:"repositories"`
+
+	// Proxy server configuration
+	Server Server `yaml:"server"`
 }
 
 // NewConfig returns a new decoded Config struct
