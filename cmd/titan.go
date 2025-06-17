@@ -7,6 +7,7 @@ import (
 	"sync"
 	"titan/internal/actions"
 	"titan/internal/config"
+	"titan/internal/proxy"
 	"titan/internal/utils"
 	"titan/pkg/flags"
 )
@@ -25,6 +26,7 @@ func main() {
 
 	if flagsData.Command == utils.PROXY_SERVER {
 		fmt.Print("Serve")
+		proxy.StartProxy(cfg)
 	} else {
 		projectActions(flagsData, cfg)
 	}
