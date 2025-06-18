@@ -101,7 +101,7 @@ func buildRoutes(proxyConfig map[string]struct {
 }
 
 func StartProxy(cfg *config.Config) {
-	routes, err := buildRoutes(cfg.Server.Proxy)
+	routes, err := buildRoutes(cfg.Server.Routes)
 	if err != nil {
 		fmt.Printf("Failed to build routes: %v", err)
 		os.Exit(1)

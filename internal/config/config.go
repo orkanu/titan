@@ -19,10 +19,10 @@ type Server struct {
 	} `yaml:"ssl"`
 
 	// Routes to proxy to
-	Proxy map[string]struct {
+	Routes map[string]struct {
 		Source string `yaml:"source"`
 		Target string `yaml:"target"`
-	} `yaml:"proxy"`
+	} `yaml:"routes"`
 }
 
 type Versions struct {
