@@ -8,13 +8,13 @@ import (
 
 type InstallAction struct {
 	name     string
-	commands []utils.Command
+	commands []utils.Action
 }
 
 func NewInstallAction() InstallAction {
 	return InstallAction{
 		name:     "install",
-		commands: []utils.Command{utils.ALL, utils.INSTALL},
+		commands: []utils.Action{utils.ALL, utils.INSTALL},
 	}
 }
 
@@ -22,7 +22,7 @@ func (ia InstallAction) Name() string {
 	return ia.name
 }
 
-func (ia InstallAction) ShouldExecute(command utils.Command) bool {
+func (ia InstallAction) ShouldExecute(command utils.Action) bool {
 	return slices.Contains(ia.commands, command)
 }
 

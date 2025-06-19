@@ -8,13 +8,13 @@ import (
 
 type CleanAction struct {
 	name     string
-	commands []utils.Command
+	commands []utils.Action
 }
 
 func NewCleanAction() CleanAction {
 	return CleanAction{
 		name:     "clean",
-		commands: []utils.Command{utils.ALL, utils.CLEAN},
+		commands: []utils.Action{utils.ALL, utils.CLEAN},
 	}
 }
 
@@ -22,7 +22,7 @@ func (ca CleanAction) Name() string {
 	return ca.name
 }
 
-func (ca CleanAction) ShouldExecute(command utils.Command) bool {
+func (ca CleanAction) ShouldExecute(command utils.Action) bool {
 	return slices.Contains(ca.commands, command)
 }
 

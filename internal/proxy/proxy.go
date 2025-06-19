@@ -10,7 +10,7 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"titan/internal/config"
+	"titan/pkg/config"
 )
 
 type Route struct {

@@ -8,13 +8,13 @@ import (
 
 type BuildAction struct {
 	name     string
-	commands []utils.Command
+	commands []utils.Action
 }
 
 func NewBuildAction() BuildAction {
 	return BuildAction{
 		name:     "build",
-		commands: []utils.Command{utils.ALL, utils.BUILD},
+		commands: []utils.Action{utils.ALL, utils.BUILD},
 	}
 }
 
@@ -22,7 +22,7 @@ func (ba BuildAction) Name() string {
 	return ba.name
 }
 
-func (ba BuildAction) ShouldExecute(command utils.Command) bool {
+func (ba BuildAction) ShouldExecute(command utils.Action) bool {
 	return slices.Contains(ba.commands, command)
 }
 

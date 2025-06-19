@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"titan/internal/container"
 	"titan/internal/utils"
 )
 
 type Flags struct {
-	Command    utils.Command
+	Command    utils.Action
 	ConfigPath string
 }
 
@@ -42,8 +43,7 @@ func ValidateConfigPath(path string) error {
 
 // ParseFlags will create and parse the CLI flags
 // For now it returns the path to config file to be used
-func ParseFlags() (*Flags, error) {
-	flagsData := &Flags{}
+func ParseFlags(container *container.Container) (string, error) {
 	// String that contains the configured configuration path
 	var configPath string
 	flag.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
@@ -72,22 +72,22 @@ func ParseFlags() (*Flags, error) {
 		switch os.Args[1] {
 		case "fetch":
 			fetchCmd.Parse(os.Args[2:])
-			flagsData.Command = utils.FETCH
+			container.Command.Action = utils.FETCH
 		case "install":
 			installCmd.Parse(os.Args[2:])
-			flagsData.Command = utils.INSTALL
+			container.Command.Action = utils.INSTALL
 		case "build":
 			buildCmd.Parse(os.Args[2:])
-			flagsData.Command = utils.BUILD
+			container.Command.Action = utils.BUILD
 		case "clean":
 			cleanCmd.Parse(os.Args[2:])
-			flagsData.Command = utils.CLEAN
+			container.Command.Action = utils.CLEAN
 		case "all":
 			allCmd.Parse(os.Args[2:])
-			flagsData.Command = utils.ALL
+			container.Command.Action = utils.ALL
 		case "serve":
 			serveCmd.Parse(os.Args[2:])
-			flagsData.Command = utils.PROXY_SERVER
+			container.Command.Action = utils.PROXY_SERVER
 		default:
 			flag.Usage()
 			// TODO how to unclude all flag set command options?
@@ -101,10 +101,9 @@ func ParseFlags() (*Flags, error) {
 
 	// Validate the path first
 	if err := ValidateConfigPath(configPath); err != nil {
-		return &Flags{}, err
+		return "", err
 	}
-	flagsData.ConfigPath = configPath
 
 	// Return the configuration path
-	return flagsData, nil
+	return configPath, nil
 }

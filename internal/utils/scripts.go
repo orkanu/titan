@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"titan/internal/config"
+	"titan/pkg/config"
 )
 
 // CaptureEnvironment sets up NVM and pnpm and captures the resulting environment

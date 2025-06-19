@@ -9,13 +9,13 @@ import (
 // Fetch action
 type FetchAction struct {
 	name     string
-	commands []utils.Command
+	commands []utils.Action
 }
 
 func NewFetchAction() FetchAction {
 	return FetchAction{
 		name:     "fetch",
-		commands: []utils.Command{utils.ALL, utils.FETCH},
+		commands: []utils.Action{utils.ALL, utils.FETCH},
 	}
 }
 
@@ -23,7 +23,7 @@ func (fa FetchAction) Name() string {
 	return fa.name
 }
 
-func (fa FetchAction) ShouldExecute(command utils.Command) bool {
+func (fa FetchAction) ShouldExecute(command utils.Action) bool {
 	return slices.Contains(fa.commands, command)
 }
 

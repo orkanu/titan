@@ -6,33 +6,35 @@ import (
 	"strings"
 	"sync"
 	"titan/internal/actions"
-	"titan/internal/config"
+	"titan/internal/container"
 	"titan/internal/proxy"
 	"titan/internal/utils"
+	"titan/pkg/config"
 	"titan/pkg/flags"
 )
 
 func main() {
-	flagsData, err := flags.ParseFlags()
+	container := container.NewContainer()
+	configPath, err := flags.ParseFlags(container)
 	if err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
 		os.Exit(1)
 	}
-	cfg, err := config.NewConfig(flagsData.ConfigPath)
+	cfg, err := config.NewConfig(configPath)
 	if err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error retrieving configuration: %v", err))
 		os.Exit(1)
 	}
 
-	if flagsData.Command == utils.PROXY_SERVER {
+	if container.Command.Action == utils.PROXY_SERVER {
 		fmt.Print("Serve")
 		proxy.StartProxy(cfg)
 	} else {
-		projectActions(flagsData, cfg)
+		projectActions(container.Command.Action, cfg)
 	}
 }
 
-func projectActions(flagsData *flags.Flags, cfg *config.Config) {
+func projectActions(action utils.Action, cfg *config.Config) {
 	// Slice with all the available actions
 	availableActions := []actions.Action{
 		actions.NewFetchAction(),
@@ -44,7 +46,7 @@ func projectActions(flagsData *flags.Flags, cfg *config.Config) {
 	// Get only actions required based on command passed to the Titan
 	var a []actions.Action
 	for _, actionToCheck := range availableActions {
-		if actionToCheck.ShouldExecute(flagsData.Command) {
+		if actionToCheck.ShouldExecute(action) {
 			a = append(a, actionToCheck)
 		}
 	}
