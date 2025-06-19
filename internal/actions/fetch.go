@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"slices"
 	"titan/internal/utils"
+	"titan/pkg/types"
 )
 
 // Fetch action
 type FetchAction struct {
 	name     string
-	commands []utils.Action
+	commands []types.Action
 }
 
 func NewFetchAction() FetchAction {
 	return FetchAction{
 		name:     "fetch",
-		commands: []utils.Action{utils.ALL, utils.FETCH},
+		commands: []types.Action{utils.ALL, utils.FETCH},
 	}
 }
 
@@ -23,7 +24,7 @@ func (fa FetchAction) Name() string {
 	return fa.name
 }
 
-func (fa FetchAction) ShouldExecute(command utils.Action) bool {
+func (fa FetchAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(fa.commands, command)
 }
 

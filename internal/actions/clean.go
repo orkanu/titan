@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"slices"
 	"titan/internal/utils"
+	"titan/pkg/types"
 )
 
 type CleanAction struct {
 	name     string
-	commands []utils.Action
+	commands []types.Action
 }
 
 func NewCleanAction() CleanAction {
 	return CleanAction{
 		name:     "clean",
-		commands: []utils.Action{utils.ALL, utils.CLEAN},
+		commands: []types.Action{utils.ALL, utils.CLEAN},
 	}
 }
 
@@ -22,7 +23,7 @@ func (ca CleanAction) Name() string {
 	return ca.name
 }
 
-func (ca CleanAction) ShouldExecute(command utils.Action) bool {
+func (ca CleanAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ca.commands, command)
 }
 

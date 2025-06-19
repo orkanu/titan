@@ -10,7 +10,7 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"titan/pkg/config"
+	"titan/internal/container"
 )
 
 type Route struct {
@@ -100,8 +100,9 @@ func buildRoutes(proxyConfig map[string]struct {
 	return routes, nil
 }
 
-func StartProxy(cfg *config.Config) {
-	routes, err := buildRoutes(cfg.Server.Routes)
+func StartProxy(container *container.Container) {
+	serverConfig := container.ConfigData.Config.Server
+	routes, err := buildRoutes(serverConfig.Routes)
 	if err != nil {
 		fmt.Printf("Failed to build routes: %v", err)
 		os.Exit(1)
@@ -120,17 +121,17 @@ func StartProxy(cfg *config.Config) {
 	})
 
 	go func() {
-		httpAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+		httpAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.Port)
 		log.Printf("Starting HTTP server at %s", httpAddr)
 		if err := http.ListenAndServe(httpAddr, httpMux); err != nil {
 			log.Fatalf("HTTP server failed: %v", err)
 		}
 	}()
 
-	if cfg.Server.SSL.Cert != "" && cfg.Server.SSL.Key != "" {
-		httpsAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.SSL.Port)
+	if serverConfig.SSL.Cert != "" && serverConfig.SSL.Key != "" {
+		httpsAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.SSL.Port)
 		log.Printf("Starting HTTPS server at %s", httpsAddr)
-		if err := http.ListenAndServeTLS(httpsAddr, cfg.Server.SSL.Cert, cfg.Server.SSL.Key, httpMux); err != nil {
+		if err := http.ListenAndServeTLS(httpsAddr, serverConfig.SSL.Cert, serverConfig.SSL.Key, httpMux); err != nil {
 			log.Fatalf("HTTPS server failed: %v", err)
 		}
 	} else {

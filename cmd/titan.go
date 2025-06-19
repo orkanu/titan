@@ -15,26 +15,25 @@ import (
 
 func main() {
 	container := container.NewContainer()
-	configPath, err := flags.ParseFlags(container)
-	if err != nil {
+	if err := flags.ParseFlags(container); err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
 		os.Exit(1)
 	}
-	cfg, err := config.NewConfig(configPath)
-	if err != nil {
+
+	if err := config.NewConfig(container); err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error retrieving configuration: %v", err))
 		os.Exit(1)
 	}
 
 	if container.Command.Action == utils.PROXY_SERVER {
 		fmt.Print("Serve")
-		proxy.StartProxy(cfg)
+		proxy.StartProxy(container)
 	} else {
-		projectActions(container.Command.Action, cfg)
+		projectActions(container)
 	}
 }
 
-func projectActions(action utils.Action, cfg *config.Config) {
+func projectActions(container *container.Container) {
 	// Slice with all the available actions
 	availableActions := []actions.Action{
 		actions.NewFetchAction(),
@@ -46,13 +45,13 @@ func projectActions(action utils.Action, cfg *config.Config) {
 	// Get only actions required based on command passed to the Titan
 	var a []actions.Action
 	for _, actionToCheck := range availableActions {
-		if actionToCheck.ShouldExecute(action) {
+		if actionToCheck.ShouldExecute(container.Command.Action) {
 			a = append(a, actionToCheck)
 		}
 	}
 
 	// Setup nvm and pnpm environment
-	env, err := utils.CaptureEnvironment(cfg.Versions)
+	env, err := utils.CaptureEnvironment(container.ConfigData.Config.Versions)
 	if err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error setting up shared bash environment: %v", err))
 		os.Exit(1)
@@ -60,12 +59,12 @@ func projectActions(action utils.Action, cfg *config.Config) {
 
 	// Run actions concurrently for each repo
 	var wg sync.WaitGroup
-	errorChan := make(chan error, len(cfg.Repositories))
-	for _, repository := range cfg.Repositories {
+	errorChan := make(chan error, len(container.ConfigData.Config.Repositories))
+	for _, repository := range container.ConfigData.Config.Repositories {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			repoPath := repoFullPath(cfg.BasePath, repository)
+			repoPath := repoFullPath(container.ConfigData.Config.BasePath, repository)
 			// Run actions one after the other. Those should be ordered in the array
 			for _, act := range a {
 				err := act.Execute(repoPath, repository, env)

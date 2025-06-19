@@ -2,58 +2,21 @@ package config
 
 import (
 	"os"
+	"titan/internal/container"
+	"titan/pkg/types"
 
 	"gopkg.in/yaml.v3"
 )
 
-type Server struct {
-	// Host value
-	Host string `yaml:"host"`
-	// Port value
-	Port int `yaml:"port"`
-	// SSL configuration
-	SSL struct {
-		Port int    `yaml:"port"`
-		Cert string `yaml:"cert"`
-		Key  string `yaml:"key"`
-	} `yaml:"ssl"`
-
-	// Routes to proxy to
-	Routes map[string]struct {
-		Source string `yaml:"source"`
-		Target string `yaml:"target"`
-	} `yaml:"routes"`
-}
-
-type Versions struct {
-	// Node version to install/use in system via NVM
-	Node string `yaml:"node"`
-	// PNOM version to install
-	PNPM string `yaml:"pnpm"`
-}
-
-// Config struct for titan
-type Config struct {
-	Versions Versions `yaml:"versions"`
-	// Base path where the repositories are located
-	BasePath string `yaml:"base_path"`
-
-	// List of respositories
-	Repositories map[string]string `yaml:"repositories"`
-
-	// Proxy server configuration
-	Server Server `yaml:"server"`
-}
-
 // NewConfig returns a new decoded Config struct
-func NewConfig(configPath string) (*Config, error) {
+func NewConfig(container *container.Container) error {
 	// Create config structure
-	config := &Config{}
+	config := &types.Config{}
 
 	// Open config file
-	file, err := os.Open(configPath)
+	file, err := os.Open(container.ConfigData.ConfigFilePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
@@ -62,8 +25,9 @@ func NewConfig(configPath string) (*Config, error) {
 
 	// Start YAML decoding from file
 	if err := d.Decode(&config); err != nil {
-		return nil, err
+		return err
 	}
 
-	return config, nil
+	container.ConfigData.Config = config
+	return nil
 }

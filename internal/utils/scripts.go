@@ -6,11 +6,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"titan/pkg/config"
+	"titan/pkg/types"
 )
 
 // CaptureEnvironment sets up NVM and pnpm and captures the resulting environment
-func CaptureEnvironment(versions config.Versions) ([]string, error) {
+func CaptureEnvironment(versions types.Versions) ([]string, error) {
 	// Source nvm and install the desired nvm and pnpm versions
 	scriptContents := fmt.Sprintf(`
 		source ~/.nvm/nvm.sh &&

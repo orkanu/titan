@@ -7,10 +7,11 @@ import (
 	"os"
 	"titan/internal/container"
 	"titan/internal/utils"
+	"titan/pkg/types"
 )
 
 type Flags struct {
-	Command    utils.Action
+	Command    types.Action
 	ConfigPath string
 }
 
@@ -42,8 +43,7 @@ func ValidateConfigPath(path string) error {
 }
 
 // ParseFlags will create and parse the CLI flags
-// For now it returns the path to config file to be used
-func ParseFlags(container *container.Container) (string, error) {
+func ParseFlags(container *container.Container) error {
 	// String that contains the configured configuration path
 	var configPath string
 	flag.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
@@ -101,9 +101,11 @@ func ParseFlags(container *container.Container) (string, error) {
 
 	// Validate the path first
 	if err := ValidateConfigPath(configPath); err != nil {
-		return "", err
+		return err
 	}
 
+	container.ConfigData.ConfigFilePath = configPath
+
 	// Return the configuration path
-	return configPath, nil
+	return nil
 }

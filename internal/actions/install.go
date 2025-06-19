@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"slices"
 	"titan/internal/utils"
+	"titan/pkg/types"
 )
 
 type InstallAction struct {
 	name     string
-	commands []utils.Action
+	commands []types.Action
 }
 
 func NewInstallAction() InstallAction {
 	return InstallAction{
 		name:     "install",
-		commands: []utils.Action{utils.ALL, utils.INSTALL},
+		commands: []types.Action{utils.ALL, utils.INSTALL},
 	}
 }
 
@@ -22,7 +23,7 @@ func (ia InstallAction) Name() string {
 	return ia.name
 }
 
-func (ia InstallAction) ShouldExecute(command utils.Action) bool {
+func (ia InstallAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ia.commands, command)
 }
 

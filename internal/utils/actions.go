@@ -1,12 +1,12 @@
 package utils
 
-type Action string
+import "titan/pkg/types"
 
 const (
-	FETCH        Action = "fetch"
-	CLEAN        Action = "clean"
-	INSTALL      Action = "install"
-	BUILD        Action = "build"
-	ALL          Action = "all"
-	PROXY_SERVER Action = "proxy-server"
+	FETCH        types.Action = "fetch"
+	CLEAN        types.Action = "clean"
+	INSTALL      types.Action = "install"
+	BUILD        types.Action = "build"
+	ALL          types.Action = "all"
+	PROXY_SERVER types.Action = "proxy-server"
 )

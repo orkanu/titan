@@ -1,22 +1,28 @@
 package container
 
 import (
-	"titan/internal/utils"
-	"titan/pkg/config"
+	"titan/pkg/types"
 )
 
 // Command holds the data required for the requested command
 type Command struct {
 	// Action to execute
-	Action utils.Action
+	Action types.Action
 	// Profile is required for server proxy action
 	Profile string
 }
 
+type Configuration struct {
+	// ConfigFilePath path where the config file is available
+	ConfigFilePath string
+	// Config holds the configuration data loaded from an YAML file
+	Config *types.Config
+}
+
 // Container holds data that can be used across the app
 type Container struct {
-	// Config holds the configuration data loaded from an YAML file
-	Config *config.Config
+	// ConfigData holds the configuration data loaded from an YAML file
+	ConfigData Configuration
 	// Command holds the data required for the requested command
 	Command Command
 }
