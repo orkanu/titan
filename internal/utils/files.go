@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -32,4 +33,16 @@ func getPathWithUserHome(dir string) string {
 		return home + strings.TrimPrefix(dir, "~")
 	}
 	return dir
+}
+
+// CheckIsFile check if the given path is a file
+func CheckIsFile(path string) error {
+	s, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if s.IsDir() {
+		return fmt.Errorf("'%s' is a directory, not a normal file", path)
+	}
+	return nil
 }

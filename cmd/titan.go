@@ -26,14 +26,18 @@ func main() {
 	}
 
 	if container.Command.Action == utils.PROXY_SERVER {
-		fmt.Print("Serve")
-		proxy.StartProxy(container)
+		processProxyCommand(container)
 	} else {
-		projectActions(container)
+		processRepositoryCommand(container)
 	}
 }
 
-func projectActions(container *container.Container) {
+func processProxyCommand(container *container.Container) {
+	// TODO: the config will change adding profiles, tasks, etc which would need to be processed
+	proxy.StartProxy(container)
+}
+
+func processRepositoryCommand(container *container.Container) {
 	// Slice with all the available actions
 	availableActions := []actions.Action{
 		actions.NewFetchAction(),

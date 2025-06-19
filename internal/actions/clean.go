@@ -15,7 +15,7 @@ type CleanAction struct {
 func NewCleanAction() CleanAction {
 	return CleanAction{
 		name:     "clean",
-		commands: []types.Action{utils.ALL, utils.CLEAN},
+		commands: []types.Action{utils.REPO_ALL, utils.CLEAN},
 	}
 }
 

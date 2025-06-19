@@ -7,6 +7,6 @@ const (
 	CLEAN        types.Action = "clean"
 	INSTALL      types.Action = "install"
 	BUILD        types.Action = "build"
-	ALL          types.Action = "all"
+	REPO_ALL     types.Action = "all"
 	PROXY_SERVER types.Action = "proxy-server"
 )

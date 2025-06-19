@@ -3,15 +3,23 @@
 run:
 	go run ./cmd/titan.go
 
-run-a:
-	go run ./cmd/titan.go all
-
 run-f:
 	go run ./cmd/titan.go fetch
 
-run-s:
-	go run ./cmd/titan.go serve
+run-i:
+	go run ./cmd/titan.go install
 
+run-b:
+	go run ./cmd/titan.go build
+
+run-c:
+	go run ./cmd/titan.go clean
+
+run-a:
+	go run ./cmd/titan.go all
+
+run-s:
+	go run ./cmd/titan.go serve -p locall:all
 
 release:
 	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -trimpath -o ./build/linux/titan ./cmd/titan.go

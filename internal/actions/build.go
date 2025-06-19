@@ -15,7 +15,7 @@ type BuildAction struct {
 func NewBuildAction() BuildAction {
 	return BuildAction{
 		name:     "build",
-		commands: []types.Action{utils.ALL, utils.BUILD},
+		commands: []types.Action{utils.REPO_ALL, utils.BUILD},
 	}
 }
 

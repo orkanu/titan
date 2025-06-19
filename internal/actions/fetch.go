@@ -16,7 +16,7 @@ type FetchAction struct {
 func NewFetchAction() FetchAction {
 	return FetchAction{
 		name:     "fetch",
-		commands: []types.Action{utils.ALL, utils.FETCH},
+		commands: []types.Action{utils.REPO_ALL, utils.FETCH},
 	}
 }
 

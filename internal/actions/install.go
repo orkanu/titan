@@ -15,7 +15,7 @@ type InstallAction struct {
 func NewInstallAction() InstallAction {
 	return InstallAction{
 		name:     "install",
-		commands: []types.Action{utils.ALL, utils.INSTALL},
+		commands: []types.Action{utils.REPO_ALL, utils.INSTALL},
 	}
 }
 
