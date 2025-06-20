@@ -10,6 +10,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"titan/internal/container"
 )
 
@@ -100,7 +101,7 @@ func buildRoutes(proxyConfig map[string]struct {
 	return routes, nil
 }
 
-func StartProxy(container *container.Container) {
+func StartProxy(container *container.Container, wg *sync.WaitGroup) {
 	serverConfig := container.ConfigData.Config.Server
 	routes, err := buildRoutes(serverConfig.Routes)
 	if err != nil {
@@ -121,6 +122,8 @@ func StartProxy(container *container.Container) {
 	})
 
 	go func() {
+		wg.Add(1)
+		defer wg.Done()
 		httpAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.Port)
 		log.Printf("Starting HTTP server at %s", httpAddr)
 		if err := http.ListenAndServe(httpAddr, httpMux); err != nil {

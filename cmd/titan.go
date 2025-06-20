@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"titan/internal/actions"
 	"titan/internal/container"
 	"titan/internal/proxy"
+	"titan/internal/tasks"
 	"titan/internal/utils"
 	"titan/pkg/config"
 	"titan/pkg/flags"
@@ -25,6 +30,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Setup nvm and pnpm environment
+	env, err := utils.CaptureEnvironment(container.ConfigData.Config.Versions)
+	if err != nil {
+		utils.PrintlnRed(fmt.Sprintf("Error setting up shared bash environment: %v", err))
+		os.Exit(1)
+	}
+	container.SharedEnvironment = env
+
 	if container.Command.Action == utils.PROXY_SERVER {
 		processProxyCommand(container)
 	} else {
@@ -33,8 +46,48 @@ func main() {
 }
 
 func processProxyCommand(container *container.Container) {
-	// TODO: the config will change adding profiles, tasks, etc which would need to be processed
-	proxy.StartProxy(container)
+
+	profileData, found := container.ConfigData.Config.Server.Profiles[container.Command.Profile]
+	if !found {
+		// TODO - need to deal with this potential error properly
+		fmt.Printf("profile %+v not found in config\n", container.Command.Profile)
+		os.Exit(1)
+	}
+	container.ConfigData.Profile = profileData
+
+	// Create a context with cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	container.Context = ctx
+
+	// Channel to capture OS signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	// Channel to collect errors from workers
+	errCh := make(chan error)
+
+	// Create a WaitGroup to wait for all workers to finish
+	var wg sync.WaitGroup
+
+	// Start tasks
+	tasks.StartTasks(container, &wg)
+	// Start proxy
+	proxy.StartProxy(container, &wg)
+
+	// Select loop to wait for signals or errors
+	select {
+	case sig := <-sigCh:
+		log.Printf("Received signal: %v. Initiating shutdown...\n", sig)
+		cancel() // Cancel the context to stop the workers
+	case err := <-errCh:
+		log.Printf("Error encountered: %v. Initiating shutdown...\n", err)
+		cancel() // Cancel the context to stop the workers
+	}
+
+	// Wait for all workers to finish
+	wg.Wait()
+	fmt.Println("All workers have stopped.")
 }
 
 func processRepositoryCommand(container *container.Container) {
@@ -54,13 +107,6 @@ func processRepositoryCommand(container *container.Container) {
 		}
 	}
 
-	// Setup nvm and pnpm environment
-	env, err := utils.CaptureEnvironment(container.ConfigData.Config.Versions)
-	if err != nil {
-		utils.PrintlnRed(fmt.Sprintf("Error setting up shared bash environment: %v", err))
-		os.Exit(1)
-	}
-
 	// Run actions concurrently for each repo
 	var wg sync.WaitGroup
 	errorChan := make(chan error, len(container.ConfigData.Config.Repositories))
@@ -71,7 +117,7 @@ func processRepositoryCommand(container *container.Container) {
 			repoPath := repoFullPath(container.ConfigData.Config.BasePath, repository)
 			// Run actions one after the other. Those should be ordered in the array
 			for _, act := range a {
-				err := act.Execute(repoPath, repository, env)
+				err := act.Execute(repoPath, repository, container.SharedEnvironment)
 				if err != nil {
 					errorChan <- err
 					// Stop procession further actions

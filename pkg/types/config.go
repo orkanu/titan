@@ -1,5 +1,26 @@
 package types
 
+type ActionData struct {
+	Command string   `yaml:"command"`
+	Args    []string `yaml:"args"`
+}
+
+type Application struct {
+	Name    string                `yaml:"name"`
+	Path    string                `yaml:"path"`
+	Actions map[string]ActionData `yaml:"actions"`
+}
+
+type Profile struct {
+	Parameters map[string]string `yaml:"parameters"`
+	Tasks      []struct {
+		Type   string `yaml:"type"`
+		Name   string `yaml:"name"`
+		Action string `yaml:"action"`
+	} `yaml:"tasks"`
+	Routes []string `yaml:"routes"`
+}
+
 type Server struct {
 	// Host value
 	Host string `yaml:"host"`
@@ -17,6 +38,10 @@ type Server struct {
 		Source string `yaml:"source"`
 		Target string `yaml:"target"`
 	} `yaml:"routes"`
+
+	Applications map[string]Application `yaml:"applications"`
+
+	Profiles map[string]Profile `yaml:"profiles"`
 }
 
 type Versions struct {

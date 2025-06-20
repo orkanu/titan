@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"titan/pkg/types"
 )
 
@@ -17,14 +18,19 @@ type Configuration struct {
 	ConfigFilePath string
 	// Config holds the configuration data loaded from an YAML file
 	Config *types.Config
+	// Profile is the profile config to use
+	Profile types.Profile
 }
 
 // Container holds data that can be used across the app
 type Container struct {
+	Context context.Context
 	// ConfigData holds the configuration data loaded from an YAML file
 	ConfigData Configuration
 	// Command holds the data required for the requested command
 	Command Command
+	// SharedEnvironment
+	SharedEnvironment []string
 }
 
 // NewContainer retuns a Container
