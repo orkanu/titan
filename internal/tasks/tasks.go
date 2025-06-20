@@ -18,13 +18,13 @@ func StartTasks(container *container.Container, wg *sync.WaitGroup) {
 			// We only have application type tasks. If we ever add any other type we should add the relevant logic here
 			app, err := getApp(container, task.Name)
 			if err != nil {
-				// TODO handle error
+				container.ErrorChannel <- err
 				return
 			}
 
 			action, err := getAppAction(app, task.Action)
 			if err != nil {
-				// TODO handle error
+				container.ErrorChannel <- err
 				return
 			}
 
@@ -33,7 +33,7 @@ func StartTasks(container *container.Container, wg *sync.WaitGroup) {
 			options := utils.NewExecCommandOptions(container.SharedEnvironment, app.Path, action.Command, action.Args...)
 			err = utils.ExecCommand(options)
 			if err != nil {
-				// TODO handle error
+				container.ErrorChannel <- err
 				return
 			}
 		}()

@@ -65,7 +65,7 @@ func processProxyCommand(container *container.Container) {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// Channel to collect errors from workers
-	errCh := make(chan error)
+	container.ErrorChannel = make(chan error)
 
 	// Create a WaitGroup to wait for all workers to finish
 	var wg sync.WaitGroup
@@ -80,7 +80,7 @@ func processProxyCommand(container *container.Container) {
 	case sig := <-sigCh:
 		log.Printf("Received signal: %v. Initiating shutdown...\n", sig)
 		cancel() // Cancel the context to stop the workers
-	case err := <-errCh:
+	case err := <-container.ErrorChannel:
 		log.Printf("Error encountered: %v. Initiating shutdown...\n", err)
 		cancel() // Cancel the context to stop the workers
 	}
@@ -109,7 +109,7 @@ func processRepositoryCommand(container *container.Container) {
 
 	// Run actions concurrently for each repo
 	var wg sync.WaitGroup
-	errorChan := make(chan error, len(container.ConfigData.Config.Repositories))
+	container.ErrorChannel = make(chan error, len(container.ConfigData.Config.Repositories))
 	for _, repository := range container.ConfigData.Config.Repositories {
 		wg.Add(1)
 		go func() {
@@ -119,7 +119,7 @@ func processRepositoryCommand(container *container.Container) {
 			for _, act := range a {
 				err := act.Execute(repoPath, repository, container.SharedEnvironment)
 				if err != nil {
-					errorChan <- err
+					container.ErrorChannel <- err
 					// Stop procession further actions
 					break
 				}
@@ -129,10 +129,10 @@ func processRepositoryCommand(container *container.Container) {
 
 	// Wait for all goroutines to complete
 	wg.Wait()
-	close(errorChan)
+	close(container.ErrorChannel)
 
 	var errors []error
-	for err := range errorChan {
+	for err := range container.ErrorChannel {
 		errors = append(errors, err)
 	}
 

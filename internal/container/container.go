@@ -24,6 +24,9 @@ type Configuration struct {
 
 // Container holds data that can be used across the app
 type Container struct {
+	// ErrorChannel
+	ErrorChannel chan error
+	// Context keeps hold of the context to allow cancellations
 	Context context.Context
 	// ConfigData holds the configuration data loaded from an YAML file
 	ConfigData Configuration
