@@ -114,10 +114,10 @@ func processRepositoryCommand(container *container.Container) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			repoPath := repoFullPath(container.ConfigData.Config.BasePath, repository)
+			repoName := repoName(repository)
 			// Run actions one after the other. Those should be ordered in the array
 			for _, act := range a {
-				err := act.Execute(repoPath, repository, container.SharedEnvironment)
+				err := act.Execute(repository, repoName, container.SharedEnvironment)
 				if err != nil {
 					container.ErrorChannel <- err
 					// Stop procession further actions
@@ -146,13 +146,7 @@ func processRepositoryCommand(container *container.Container) {
 		fmt.Println("All actions completed successfully")
 	}
 }
-
-func repoFullPath(base string, repo string) string {
-	var b strings.Builder
-	b.WriteString(base)
-	if !strings.HasSuffix(base, "/") {
-		b.WriteString("/")
-	}
-	b.WriteString(repo)
-	return b.String()
+func repoName(repository string) string {
+	split := strings.Split(repository, "/")
+	return split[len(split)-1]
 }

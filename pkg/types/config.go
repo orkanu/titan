@@ -54,8 +54,6 @@ type Versions struct {
 // Config struct for titan
 type Config struct {
 	Versions Versions `yaml:"versions"`
-	// Base path where the repositories are located
-	BasePath string `yaml:"base_path"`
 
 	// List of respositories
 	Repositories map[string]string `yaml:"repositories"`
