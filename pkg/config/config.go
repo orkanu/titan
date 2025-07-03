@@ -2,21 +2,20 @@ package config
 
 import (
 	"os"
-	"titan/internal/container"
 	"titan/pkg/types"
 
 	"gopkg.in/yaml.v3"
 )
 
 // NewConfig returns a new decoded Config struct
-func NewConfig(container *container.Container) error {
+func NewConfig(configFilePath string) (*types.Config, error) {
 	// Create config structure
 	config := &types.Config{}
 
 	// Open config file
-	file, err := os.Open(container.ConfigData.ConfigFilePath)
+	file, err := os.Open(configFilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer file.Close()
 
@@ -25,9 +24,9 @@ func NewConfig(container *container.Container) error {
 
 	// Start YAML decoding from file
 	if err := d.Decode(&config); err != nil {
-		return err
+		return nil, err
 	}
 
-	container.ConfigData.Config = config
-	return nil
+	// container.ConfigData.Config = config
+	return config, nil
 }

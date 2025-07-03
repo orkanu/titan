@@ -7,36 +7,29 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"titan/internal/actions"
 	"titan/internal/container"
 	"titan/internal/proxy"
 	"titan/internal/tasks"
 	"titan/internal/utils"
-	"titan/pkg/config"
 	"titan/pkg/flags"
 )
 
 func main() {
-	container := container.NewContainer()
-	if err := flags.ParseFlags(container); err != nil {
+	flagData, err := flags.ParseFlags()
+	if err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
 		os.Exit(1)
 	}
 
-	if err := config.NewConfig(container); err != nil {
-		utils.PrintlnRed(fmt.Sprintf("Error retrieving configuration: %v", err))
-		os.Exit(1)
+	options := container.ContainerOptions{
+		CommandAction: flagData.Command,
+		Profile:       flagData.Profile,
+		ConfigPath:    flagData.ConfigPath,
 	}
-
-	// Setup nvm and pnpm environment
-	env, err := utils.CaptureEnvironment(container.ConfigData.Config.Versions)
-	if err != nil {
-		utils.PrintlnRed(fmt.Sprintf("Error setting up shared bash environment: %v", err))
-		os.Exit(1)
-	}
-	container.SharedEnvironment = env
+	container := container.NewContainer(options)
+	defer container.CleanUp()
 
 	if container.Command.Action == utils.PROXY_SERVER {
 		processProxyCommand(container)
@@ -67,13 +60,10 @@ func processProxyCommand(container *container.Container) {
 	// Channel to collect errors from workers
 	container.ErrorChannel = make(chan error)
 
-	// Create a WaitGroup to wait for all workers to finish
-	var wg sync.WaitGroup
-
 	// Start tasks
-	tasks.StartTasks(container, &wg)
+	tasks.StartTasks(container)
 	// Start proxy
-	proxy.StartProxy(container, &wg)
+	proxy.StartProxy(container)
 
 	// Select loop to wait for signals or errors
 	select {
@@ -86,7 +76,7 @@ func processProxyCommand(container *container.Container) {
 	}
 
 	// Wait for all workers to finish
-	wg.Wait()
+	container.WaitGroup.Wait()
 	fmt.Println("All workers have stopped.")
 }
 
@@ -108,12 +98,11 @@ func processRepositoryCommand(container *container.Container) {
 	}
 
 	// Run actions concurrently for each repo
-	var wg sync.WaitGroup
 	container.ErrorChannel = make(chan error, len(container.ConfigData.Config.Repositories))
 	for _, repository := range container.ConfigData.Config.Repositories {
-		wg.Add(1)
+		container.WaitGroup.Add(1)
 		go func() {
-			defer wg.Done()
+			defer container.WaitGroup.Done()
 			repoName := repoName(repository)
 			// Run actions one after the other. Those should be ordered in the array
 			for _, act := range a {
@@ -128,7 +117,7 @@ func processRepositoryCommand(container *container.Container) {
 	}
 
 	// Wait for all goroutines to complete
-	wg.Wait()
+	container.WaitGroup.Wait()
 	close(container.ErrorChannel)
 
 	var errors []error

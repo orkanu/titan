@@ -2,18 +2,17 @@ package tasks
 
 import (
 	"fmt"
-	"sync"
 	"titan/internal/container"
 	"titan/internal/utils"
 	"titan/pkg/types"
 )
 
-func StartTasks(container *container.Container, wg *sync.WaitGroup) {
+func StartTasks(container *container.Container) {
 
 	for _, task := range container.ConfigData.Profile.Tasks {
 		go func() {
-			wg.Add(1)
-			defer wg.Done()
+			container.WaitGroup.Add(1)
+			defer container.WaitGroup.Done()
 
 			// We only have application type tasks. If we ever add any other type we should add the relevant logic here
 			app, err := getApp(container, task.Name)

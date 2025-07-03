@@ -3,18 +3,19 @@ package flags
 import (
 	"flag"
 	"log"
-	"titan/internal/container"
 	"titan/internal/utils"
 	"titan/pkg/types"
 )
 
-type Flags struct {
+type FlagData struct {
 	Command    types.Action
+	Profile    string
 	ConfigPath string
 }
 
 // ParseFlags will create and parse the CLI flags
-func ParseFlags(container *container.Container) error {
+func ParseFlags() (*FlagData, error) {
+	flagData := &FlagData{}
 	// String that contains the configured configuration path
 	var configPath string
 	flag.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
@@ -26,17 +27,24 @@ func ParseFlags(container *container.Container) error {
 		// Parse flags based on command
 		switch cmd {
 		case "fetch":
-			fetch(container, args)
+			command := fetch(args)
+			flagData.Command = command
 		case "install":
-			install(container, args)
+			command := install(args)
+			flagData.Command = command
 		case "build":
-			build(container, args)
+			command := build(args)
+			flagData.Command = command
 		case "clean":
-			clean(container, args)
+			command := clean(args)
+			flagData.Command = command
 		case "all":
-			all(container, args)
+			command := all(args)
+			flagData.Command = command
 		case "serve":
-			serve(container, args)
+			command, profile := serve(args)
+			flagData.Command = command
+			flagData.Profile = profile
 		default:
 			log.Fatal("Please specify a valid subcommand.")
 		}
@@ -46,12 +54,12 @@ func ParseFlags(container *container.Container) error {
 
 	// Validate the path first
 	if err := utils.CheckIsFile(configPath); err != nil {
-		return err
+		return nil, err
 	}
 
-	container.ConfigData.ConfigFilePath = configPath
+	flagData.ConfigPath = configPath
 
-	return nil
+	return flagData, nil
 }
 
 func registerGlobalFlags(fset *flag.FlagSet) {
@@ -60,42 +68,42 @@ func registerGlobalFlags(fset *flag.FlagSet) {
 	})
 }
 
-func fetch(container *container.Container, args []string) {
+func fetch(args []string) types.Action {
 	flag := flag.NewFlagSet("fetch", flag.ExitOnError)
 	registerGlobalFlags(flag)
 	flag.Parse(args)
-	container.Command.Action = utils.FETCH
+	return utils.FETCH
 }
 
-func install(container *container.Container, args []string) {
+func install(args []string) types.Action {
 	flag := flag.NewFlagSet("install", flag.ExitOnError)
 	registerGlobalFlags(flag)
 	flag.Parse(args)
-	container.Command.Action = utils.INSTALL
+	return utils.INSTALL
 }
 
-func build(container *container.Container, args []string) {
+func build(args []string) types.Action {
 	flag := flag.NewFlagSet("build", flag.ExitOnError)
 	registerGlobalFlags(flag)
 	flag.Parse(args)
-	container.Command.Action = utils.BUILD
+	return utils.BUILD
 }
 
-func clean(container *container.Container, args []string) {
+func clean(args []string) types.Action {
 	flag := flag.NewFlagSet("clean", flag.ExitOnError)
 	registerGlobalFlags(flag)
 	flag.Parse(args)
-	container.Command.Action = utils.CLEAN
+	return utils.CLEAN
 }
 
-func all(container *container.Container, args []string) {
+func all(args []string) types.Action {
 	flag := flag.NewFlagSet("all", flag.ExitOnError)
 	registerGlobalFlags(flag)
 	flag.Parse(args)
-	container.Command.Action = utils.REPO_ALL
+	return utils.REPO_ALL
 }
 
-func serve(container *container.Container, args []string) {
+func serve(args []string) (types.Action, string) {
 	flag := flag.NewFlagSet("serve", flag.ExitOnError)
 	var profile = flag.String("p", "", "profile to use")
 	registerGlobalFlags(flag)
@@ -103,6 +111,5 @@ func serve(container *container.Container, args []string) {
 	if *profile == "" {
 		log.Fatal("missing profile flag in serve command")
 	}
-	container.Command.Action = utils.PROXY_SERVER
-	container.Command.Profile = *profile
+	return utils.PROXY_SERVER, *profile
 }
