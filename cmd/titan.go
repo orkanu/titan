@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"titan/internal/actions"
 	"titan/internal/container"
@@ -17,11 +17,23 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	flagData, err := flags.ParseFlags()
 	if err != nil {
 		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
 		os.Exit(1)
 	}
+
+	// Handle SIGINT/SIGTERM
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-sigCh
+		fmt.Printf("Received signal: %v. Initiating shutdown...\n", sig)
+		cancel()
+	}()
 
 	options := container.ContainerOptions{
 		CommandAction: flagData.Command,
@@ -32,13 +44,16 @@ func main() {
 	defer container.CleanUp()
 
 	if container.Command.Action == utils.PROXY_SERVER {
-		processProxyCommand(container)
+		processProxyCommand(ctx, container)
 	} else {
 		processRepositoryCommand(container)
 	}
 }
 
-func processProxyCommand(container *container.Container) {
+func processProxyCommand(ctx context.Context, container *container.Container) {
+
+	// Create unbuffered error channel for proxy server and tasks
+	errorChannel := make(chan error)
 
 	profileData, found := container.ConfigData.Config.Server.Profiles[container.Command.Profile]
 	if !found {
@@ -48,39 +63,32 @@ func processProxyCommand(container *container.Container) {
 	}
 	container.ConfigData.Profile = profileData
 
-	// Create a context with cancellation
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	container.Context = ctx
-
-	// Channel to capture OS signals
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-	// Channel to collect errors from workers
-	container.ErrorChannel = make(chan error)
-
 	// Start tasks
-	tasks.StartTasks(container)
+	tasks.StartTasks(errorChannel, container)
 	// Start proxy
-	proxy.StartProxy(container)
+	proxy.StartProxy(errorChannel, container)
 
-	// Select loop to wait for signals or errors
+	// Wait for error or shutdown
 	select {
-	case sig := <-sigCh:
-		log.Printf("Received signal: %v. Initiating shutdown...\n", sig)
-		cancel() // Cancel the context to stop the workers
-	case err := <-container.ErrorChannel:
-		log.Printf("Error encountered: %v. Initiating shutdown...\n", err)
-		cancel() // Cancel the context to stop the workers
+	case err := <-errorChannel:
+		fmt.Printf("fatal error: %v\n", err)
+	case <-ctx.Done():
+		fmt.Println("context canceled, shutting down")
 	}
-
-	// Wait for all workers to finish
-	container.WaitGroup.Wait()
 	fmt.Println("All workers have stopped.")
 }
 
 func processRepositoryCommand(container *container.Container) {
+	// Create a WaitGroup to wait for all workers to finish
+	var wg sync.WaitGroup
+
+	// Channel to do not get stuck in the select below if the error or signal channels do not receive anything
+	// but the repository commands are finished
+	waitCh := make(chan struct{})
+
+	// Create buffered error channel for repository actions
+	errorChannel := make(chan error, len(container.ConfigData.Config.Repositories))
+
 	// Slice with all the available actions
 	availableActions := []actions.Action{
 		actions.NewFetchAction(),
@@ -98,30 +106,39 @@ func processRepositoryCommand(container *container.Container) {
 	}
 
 	// Run actions concurrently for each repo
-	container.ErrorChannel = make(chan error, len(container.ConfigData.Config.Repositories))
+	// container.ErrorChannel = make(chan error, len(container.ConfigData.Config.Repositories))
 	for _, repository := range container.ConfigData.Config.Repositories {
-		container.WaitGroup.Add(1)
-		go func() {
-			defer container.WaitGroup.Done()
+		wg.Go(func() {
 			repoName := repoName(repository)
 			// Run actions one after the other. Those should be ordered in the array
 			for _, act := range a {
 				err := act.Execute(repository, repoName, container.SharedEnvironment)
 				if err != nil {
-					container.ErrorChannel <- err
+					errorChannel <- err
 					// Stop procession further actions
 					break
 				}
 			}
-		}()
+		})
 	}
 
-	// Wait for all goroutines to complete
-	container.WaitGroup.Wait()
-	close(container.ErrorChannel)
+	// Wait for all workers to finish
+	wg.Wait()
+	close(waitCh)
+
+	// Select loop to wait for signals or errors
+	select {
+	case <-waitCh:
+		fmt.Println("WaitGroup finished!")
+	case err := <-errorChannel:
+		fmt.Printf("Error encountered: %v. Initiating shutdown...\n", err)
+		// cancel() // Cancel the context to stop the workers
+	}
+
+	close(errorChannel)
 
 	var errors []error
-	for err := range container.ErrorChannel {
+	for err := range errorChannel {
 		errors = append(errors, err)
 	}
 

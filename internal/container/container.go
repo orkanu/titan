@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"titan/internal/utils"
 	"titan/pkg/config"
 	"titan/pkg/types"
@@ -29,14 +28,6 @@ type Configuration struct {
 
 // Container holds data that can be used across the app
 type Container struct {
-	// Ctx holds the context
-	Ctx context.Context
-	// ContextCancelFunc holds the context cancelation function
-	ContextCancelFunc context.CancelFunc
-	// WaitGroup is used to wait for all workers to finish
-	WaitGroup *sync.WaitGroup
-	// ErrorChannel
-	ErrorChannel chan error
 	// Context keeps hold of the context to allow cancellations
 	Context context.Context
 	// ConfigData holds the configuration data loaded from an YAML file
@@ -71,27 +62,26 @@ func NewContainer(options ContainerOptions) *Container {
 		os.Exit(1)
 	}
 
-	// TODO set error channel here
-	errorChannel := make(chan error)
-	cleanUpFuncs = addCleanUpFunc(cleanUpFuncs, "close error channel", func() error {
-		close(errorChannel)
-		return nil
-	})
+	// Create error channel. For proxy server we use an unbuffered on or buffered for repository actions
+	// var errorChannel chan error
+	// if options.CommandAction == utils.PROXY_SERVER {
+	// 	errorChannel = make(chan error)
+	// 	cleanUpFuncs = addCleanUpFunc(cleanUpFuncs, "close error channel", func() error {
+	// 		close(errorChannel)
+	// 		return nil
+	// 	})
+	// } else {
+	// 	errorChannel = make(chan error, len(config.Repositories))
+	// 	// we do not close the error channel here cause we need to do it after we process actions to read all
+	// 	// errors added in it. If we close it there and then via the cleanup function, we get a panic here
+	// 	// as the channel was already closed
+	// }
 
-	// Create a context with cancellation
-	ctx, cancel := context.WithCancel(context.Background())
-	cleanUpFuncs = addCleanUpFunc(cleanUpFuncs, "cancel context", func() error {
-		cancel()
-		return nil
-	})
-
-	// Create a WaitGroup to wait for all workers to finish
-	var wg sync.WaitGroup
+	// cleanUpFuncs = addCleanUpFunc(cleanUpFuncs, "sample cleanup name", func() error {
+	// 	return nil
+	// })
 
 	return &Container{
-		Context:           ctx,
-		ContextCancelFunc: cancel,
-		WaitGroup:         &wg,
 		Command: Command{
 			Action:  options.CommandAction,
 			Profile: options.Profile,
@@ -101,7 +91,6 @@ func NewContainer(options ContainerOptions) *Container {
 			Config:         config,
 		},
 		SharedEnvironment: env,
-		ErrorChannel:      errorChannel,
 		CleanUpFuncs:      cleanUpFuncs,
 	}
 }

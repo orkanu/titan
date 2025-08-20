@@ -7,23 +7,20 @@ import (
 	"titan/pkg/types"
 )
 
-func StartTasks(container *container.Container) {
+func StartTasks(errorChannel chan error, container *container.Container) {
 
 	for _, task := range container.ConfigData.Profile.Tasks {
 		go func() {
-			container.WaitGroup.Add(1)
-			defer container.WaitGroup.Done()
-
 			// We only have application type tasks. If we ever add any other type we should add the relevant logic here
 			app, err := getApp(container, task.Name)
 			if err != nil {
-				container.ErrorChannel <- err
+				errorChannel <- err
 				return
 			}
 
 			action, err := getAppAction(app, task.Action)
 			if err != nil {
-				container.ErrorChannel <- err
+				errorChannel <- err
 				return
 			}
 
@@ -32,7 +29,7 @@ func StartTasks(container *container.Container) {
 			options := utils.NewExecCommandOptions(container.SharedEnvironment, app.Path, action.Command, action.Args...)
 			err = utils.ExecCommand(options)
 			if err != nil {
-				container.ErrorChannel <- err
+				errorChannel <- err
 				return
 			}
 		}()

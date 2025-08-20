@@ -1,13 +1,13 @@
 package proxy
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"sort"
 	"strings"
 	"titan/internal/container"
@@ -100,12 +100,11 @@ func buildRoutes(proxyConfig map[string]struct {
 	return routes, nil
 }
 
-func StartProxy(container *container.Container) {
+func StartProxy(errorChannel chan error, container *container.Container) {
 	serverConfig := container.ConfigData.Config.Server
 	routes, err := buildRoutes(serverConfig.Routes)
 	if err != nil {
-		fmt.Printf("Failed to build routes: %v", err)
-		os.Exit(1)
+		errorChannel <- err
 	}
 
 	httpMux := http.NewServeMux()
@@ -121,23 +120,22 @@ func StartProxy(container *container.Container) {
 	})
 
 	go func() {
-		container.WaitGroup.Add(1)
-		defer container.WaitGroup.Done()
 		httpAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.Port)
 		log.Printf("Starting HTTP server at %s", httpAddr)
 		if err := http.ListenAndServe(httpAddr, httpMux); err != nil {
-			log.Fatalf("HTTP server failed: %v", err)
+			errorChannel <- err
 		}
 	}()
 
-	if serverConfig.SSL.Cert != "" && serverConfig.SSL.Key != "" {
-		httpsAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.SSL.Port)
-		log.Printf("Starting HTTPS server at %s", httpsAddr)
-		if err := http.ListenAndServeTLS(httpsAddr, serverConfig.SSL.Cert, serverConfig.SSL.Key, httpMux); err != nil {
-			log.Fatalf("HTTPS server failed: %v", err)
+	go func() {
+		if serverConfig.SSL.Cert != "" && serverConfig.SSL.Key != "" {
+			httpsAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.SSL.Port)
+			log.Printf("Starting HTTPS server at %s", httpsAddr)
+			if err := http.ListenAndServeTLS(httpsAddr, serverConfig.SSL.Cert, serverConfig.SSL.Key, httpMux); err != nil {
+				errorChannel <- err
+			}
+		} else {
+			errorChannel <- errors.New("TLS configuration missing. Please add valid value and try again")
 		}
-	} else {
-		fmt.Println("TLS configuration missing. Please add valid value and try again")
-		os.Exit(1)
-	}
+	}()
 }
