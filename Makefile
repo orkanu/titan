@@ -21,6 +21,9 @@ run-a:
 run-s:
 	go run ./cmd/titan.go serve -p local:all
 
+run-h:
+	go run ./cmd/titan.go help
+
 release:
 	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -trimpath -o ./build/linux/titan ./cmd/titan.go
 	GOOS=linux GOARCH=arm go build -ldflags="-s -w" -trimpath -o ./build/linux/titan-arm ./cmd/titan.go

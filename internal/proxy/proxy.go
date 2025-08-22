@@ -3,7 +3,6 @@ package proxy
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -121,7 +120,7 @@ func StartProxy(errorChannel chan error, container *core.Container) {
 
 	go func() {
 		httpAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.Port)
-		log.Printf("Starting HTTP server at %s", httpAddr)
+		container.Logger.Info("Starting HTTP server", "address", httpAddr)
 		if err := http.ListenAndServe(httpAddr, httpMux); err != nil {
 			errorChannel <- err
 		}
@@ -130,7 +129,7 @@ func StartProxy(errorChannel chan error, container *core.Container) {
 	go func() {
 		if serverConfig.SSL.Cert != "" && serverConfig.SSL.Key != "" {
 			httpsAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.SSL.Port)
-			log.Printf("Starting HTTPS server at %s", httpsAddr)
+			container.Logger.Info("Starting HTTPS server", "address", httpsAddr)
 			if err := http.ListenAndServeTLS(httpsAddr, serverConfig.SSL.Cert, serverConfig.SSL.Key, httpMux); err != nil {
 				errorChannel <- err
 			}

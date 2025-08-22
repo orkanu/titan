@@ -46,6 +46,8 @@ func (ac *AppCommands) Run() error {
 	registerGlobalFlags(serveCmd)
 	var profile string
 	serveCmd.StringVar(&profile, "p", "", "profile to use")
+	helpCmd := flag.NewFlagSet("help", flag.ExitOnError)
+	registerGlobalFlags(helpCmd)
 
 	if len(os.Args) < 2 {
 		return errors.New("Please specify a subcommand.")
@@ -53,12 +55,14 @@ func (ac *AppCommands) Run() error {
 
 	runCommand := func(name string, vars ...any) error {
 		// Validate the config file path first
-		if err := utils.CheckIsFile(vars[0].(string)); err != nil {
-			return err
-		}
-		// Validate profile is present for serve command
-		if name == "serve" && vars[1].(string) == "" {
-			return errors.New("missing profile")
+		if name != "help" {
+			if err := utils.CheckIsFile(vars[0].(string)); err != nil {
+				return err
+			}
+			// Validate profile is present for serve command
+			if name == "serve" && vars[1].(string) == "" {
+				return errors.New("missing profile")
+			}
 		}
 
 		if command, ok := ac.commands[name]; ok {
@@ -88,6 +92,9 @@ func (ac *AppCommands) Run() error {
 	case "serve":
 		serveCmd.Parse(os.Args[2:])
 		return runCommand("serve", configPath, profile)
+	case "help":
+		helpCmd.Parse(os.Args[2:])
+		return runCommand("help")
 	default:
 		return errors.New("Please specify a valid subcommand.")
 	}

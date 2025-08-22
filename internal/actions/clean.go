@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"log/slog"
 	"slices"
 	"titan/internal/utils"
 	"titan/pkg/types"
@@ -27,7 +28,7 @@ func (ca CleanAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ca.commands, command)
 }
 
-func (ca CleanAction) Execute(repoPath string, projectName string, env []string) error {
+func (ca CleanAction) Execute(logger *slog.Logger, repoPath string, projectName string, env []string) error {
 	// create temp shell script
 	cleanYalc := ""
 	if projectName == "cbs-residential-web" {
@@ -39,7 +40,7 @@ func (ca CleanAction) Execute(repoPath string, projectName string, env []string)
 		find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
 		%v
 		`, cleanYalc)
-	fmt.Printf("Action [clean] on project [%v]\n", projectName)
+	logger.Info("Action [clean]", "project", projectName)
 	if err := utils.ExecScript(script, env, repoPath); err != nil {
 		return fmt.Errorf("Error executing clean action script: %v", err)
 	}

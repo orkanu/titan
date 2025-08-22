@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 	"titan/internal/actions"
 	"titan/internal/core"
 	"titan/internal/proxy"
@@ -15,22 +17,37 @@ import (
 	"titan/internal/utils"
 	"titan/pkg/flags"
 	"titan/pkg/types"
+
+	"github.com/lmittmann/tint"
 )
 
 func main() {
+	w := os.Stderr
+
+	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	// slog.SetDefault(logger)
+	logger := slog.New(tint.NewHandler(w, nil))
+	// Set global logger with custom options
+	slog.SetDefault(slog.New(
+		tint.NewHandler(w, &tint.Options{
+			Level:      slog.LevelDebug,
+			TimeFormat: time.Kitchen,
+		}),
+	))
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	repoRunner := func(action types.Action) func(vars ...any) error {
 		return func(vars ...any) error {
 			options := core.ContainerOptions{
+				Logger:        logger,
 				CommandAction: action,
 				ConfigPath:    vars[0].(string),
 			}
 			container := core.NewContainer(options)
-			defer container.CleanUp()
 
-			processRepositoryCommand(container)
+			processCommand(container)
 			return nil
 		}
 	}
@@ -44,14 +61,33 @@ func main() {
 			"serve": {
 				Runner: func(vars ...any) error {
 					options := core.ContainerOptions{
+						Logger:        logger,
 						CommandAction: utils.PROXY_SERVER,
 						Profile:       vars[1].(string),
 						ConfigPath:    vars[0].(string),
 					}
 					container := core.NewContainer(options)
-					defer container.CleanUp()
 
-					processProxyCommand(ctx, container)
+					processProxy(ctx, container)
+					return nil
+				},
+			},
+			"help": {
+				Runner: func(_ ...any) error {
+					utils.PrintlnWhite("TITAN - Wee CLI app that allows perform some operations against a project as well as start a proxy server")
+					utils.PrintlnWhite("to run a bunch of services under the same host")
+					utils.PrintlnBlack("")
+					utils.PrintlnGreen("Usage:")
+					utils.PrintlnGreen("   fetch   - performs a git fetch on the configured project/s")
+					utils.PrintlnGreen("   install - performs a pnpm install on the configured project/s")
+					utils.PrintlnGreen("   build   - performs a pnpm run build:local on the configured project/s")
+					utils.PrintlnGreen("   clean   - performs a clean up of the node_modules and dist folders on the configured project/s")
+					utils.PrintlnGreen("   all     - performs all of the above")
+					utils.PrintlnGreen("   serve   - starts a proxy server based on configuration. NOTE: required flag \"-p\" to specify a profile to use")
+					utils.PrintlnBlack("")
+					utils.PrintlnCyan("To run any of the comands, it requires a configuration file (default \"titan.yaml\" in the same place where the")
+					utils.PrintlnCyan("binary is run). Using the -c flag, we can specify a different config file location")
+
 					return nil
 				},
 			},
@@ -63,19 +99,19 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigCh
-		fmt.Printf("Received signal: %v. Initiating shutdown...\n", sig)
+		logger.Info("Inititation shutdown - received signal", "signal", sig)
 		cancel()
 	}()
 
 	appComands := flags.NewAppCommands(&commandOptions)
 	err := appComands.Run()
 	if err != nil {
-		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
+		logger.Error("Error parsing flags", "error", err)
 		os.Exit(1)
 	}
 }
 
-func processProxyCommand(ctx context.Context, container *core.Container) {
+func processProxy(ctx context.Context, container *core.Container) {
 
 	// Create unbuffered error channel for proxy server and tasks
 	errorChannel := make(chan error)
@@ -83,7 +119,7 @@ func processProxyCommand(ctx context.Context, container *core.Container) {
 	profileData, found := container.ConfigData.Config.Server.Profiles[container.Command.Profile]
 	if !found {
 		// TODO - need to deal with this potential error properly
-		fmt.Printf("profile %+v not found in config\n", container.Command.Profile)
+		container.Logger.Info("Profile not found in config", "profile", container.Command.Profile)
 		os.Exit(1)
 	}
 	container.ConfigData.Profile = profileData
@@ -96,14 +132,14 @@ func processProxyCommand(ctx context.Context, container *core.Container) {
 	// Wait for error or shutdown
 	select {
 	case err := <-errorChannel:
-		fmt.Printf("fatal error: %v\n", err)
+		container.Logger.Error("fatal error", "error", err)
 	case <-ctx.Done():
-		fmt.Println("context canceled, shutting down")
+		container.Logger.Info("context canceled, shutting down")
 	}
-	fmt.Println("All workers have stopped.")
+	container.Logger.Info("All workers have stopped")
 }
 
-func processRepositoryCommand(container *core.Container) {
+func processCommand(container *core.Container) {
 	// Create a WaitGroup to wait for all workers to finish
 	var wg sync.WaitGroup
 
@@ -137,7 +173,7 @@ func processRepositoryCommand(container *core.Container) {
 			repoName := repoName(repository)
 			// Run actions one after the other. Those should be ordered in the array
 			for _, act := range a {
-				err := act.Execute(repository, repoName, container.SharedEnvironment)
+				err := act.Execute(container.Logger, repository, repoName, container.SharedEnvironment)
 				if err != nil {
 					errorChannel <- err
 					// Stop procession further actions
@@ -154,9 +190,9 @@ func processRepositoryCommand(container *core.Container) {
 	// Select loop to wait for signals or errors
 	select {
 	case <-waitCh:
-		fmt.Println("WaitGroup finished!")
+		container.Logger.Debug("WaitGroup finished")
 	case err := <-errorChannel:
-		fmt.Printf("Error encountered: %v. Initiating shutdown...\n", err)
+		container.Logger.Error("fatal error", "error", err)
 		// cancel() // Cancel the context to stop the workers
 	}
 
@@ -168,13 +204,13 @@ func processRepositoryCommand(container *core.Container) {
 	}
 
 	if len(errors) > 0 {
-		utils.PrintlnRed("Some actions failed:")
+		container.Logger.Error("Some actions failed:")
 		for _, err := range errors {
-			utils.PrintlnRed(fmt.Sprintf("  - %v", err))
+			container.Logger.Error(fmt.Sprintf("  - %v", err))
 		}
 		os.Exit(1)
 	} else {
-		fmt.Println("All actions completed successfully")
+		container.Logger.Debug("All actions completed")
 	}
 }
 func repoName(repository string) string {

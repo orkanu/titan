@@ -1,8 +1,7 @@
 package core
 
 import (
-	"context"
-	"fmt"
+	"log/slog"
 	"os"
 	"titan/internal/utils"
 	"titan/pkg/config"
@@ -28,19 +27,18 @@ type Configuration struct {
 
 // Container holds data that can be used across the app
 type Container struct {
-	// Context keeps hold of the context to allow cancellations
-	Context context.Context
+	// Logger holds the logger instance to use across the app
+	Logger *slog.Logger
 	// ConfigData holds the configuration data loaded from an YAML file
 	ConfigData Configuration
 	// Command holds the data required for the requested command
 	Command Command
 	// SharedEnvironment
 	SharedEnvironment []string
-	// CleanUpFuncs is a list of functions to clean up the container
-	CleanUpFuncs []func() error
 }
 
 type ContainerOptions struct {
+	Logger        *slog.Logger
 	CommandAction types.Action
 	Profile       string
 	ConfigPath    string
@@ -48,40 +46,25 @@ type ContainerOptions struct {
 
 // NewContainer retuns a Container
 func NewContainer(options ContainerOptions) *Container {
-	var cleanUpFuncs []func() error
 	// Load configuration
 	config, err := config.NewConfig(options.ConfigPath)
 	if err != nil {
-		utils.PrintlnRed(fmt.Sprintf("Error retrieving configuration: %v", err))
+		options.Logger.Error("Error retrieving configuration", "error", err)
 		os.Exit(1)
 	}
 	// Setup nvm and pnpm to use as environment on other shell executions
 	env, err := utils.CaptureEnvironment(config.Versions)
 	if err != nil {
-		utils.PrintlnRed(fmt.Sprintf("Error setting up shared bash environment: %v", err))
+		options.Logger.Error("Error setting up shared bash environment", "error", err)
 		os.Exit(1)
 	}
-
-	// Create error channel. For proxy server we use an unbuffered on or buffered for repository actions
-	// var errorChannel chan error
-	// if options.CommandAction == utils.PROXY_SERVER {
-	// 	errorChannel = make(chan error)
-	// 	cleanUpFuncs = addCleanUpFunc(cleanUpFuncs, "close error channel", func() error {
-	// 		close(errorChannel)
-	// 		return nil
-	// 	})
-	// } else {
-	// 	errorChannel = make(chan error, len(config.Repositories))
-	// 	// we do not close the error channel here cause we need to do it after we process actions to read all
-	// 	// errors added in it. If we close it there and then via the cleanup function, we get a panic here
-	// 	// as the channel was already closed
-	// }
 
 	// cleanUpFuncs = addCleanUpFunc(cleanUpFuncs, "sample cleanup name", func() error {
 	// 	return nil
 	// })
 
 	return &Container{
+		Logger: options.Logger,
 		Command: Command{
 			Action:  options.CommandAction,
 			Profile: options.Profile,
@@ -91,24 +74,5 @@ func NewContainer(options ContainerOptions) *Container {
 			Config:         config,
 		},
 		SharedEnvironment: env,
-		CleanUpFuncs:      cleanUpFuncs,
 	}
-}
-
-// CleanUp executes all clean up functions available in CleanUpFuncs
-func (c Container) CleanUp() {
-	for _, clean := range c.CleanUpFuncs {
-		if err := clean(); err != nil {
-			fmt.Printf("%v\n", err)
-
-			// TODO - I'm doing clean up here. Do I need to exit ungracefuly (i.e. os.Exit(1))
-		}
-	}
-}
-
-func addCleanUpFunc(cleanUpFuncs []func() error, message string, callback func() error) []func() error {
-	return append(cleanUpFuncs, func() error {
-		fmt.Printf("CleanUp - %v\n", message)
-		return callback()
-	})
 }
