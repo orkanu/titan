@@ -1,115 +1,100 @@
 package flags
 
 import (
+	"errors"
 	"flag"
-	"log"
+	"os"
 	"titan/internal/utils"
-	"titan/pkg/types"
 )
 
-type FlagData struct {
-	Command    types.Action
-	Profile    string
-	ConfigPath string
+type Command struct {
+	Runner     func(vars ...any) error
+	Subcommand []Command
 }
 
-// ParseFlags will create and parse the CLI flags
-func ParseFlags() (*FlagData, error) {
-	flagData := &FlagData{}
+type AppCommands struct {
+	commands map[string]Command
+}
+
+type AppCommandsOptions struct {
+	Commands map[string]Command
+}
+
+func NewAppCommands(options *AppCommandsOptions) *AppCommands {
+	return &AppCommands{
+		commands: options.Commands,
+	}
+}
+
+func (ac *AppCommands) Run() error {
 	// String that contains the configured configuration path
 	var configPath string
 	flag.StringVar(&configPath, "c", "./titan.yaml", "path to config file")
 
-	flag.Parse()
-	args := flag.Args()
-	if len(args) != 0 {
-		cmd, args := args[0], args[1:]
-		// Parse flags based on command
-		switch cmd {
-		case "fetch":
-			command := fetch(args)
-			flagData.Command = command
-		case "install":
-			command := install(args)
-			flagData.Command = command
-		case "build":
-			command := build(args)
-			flagData.Command = command
-		case "clean":
-			command := clean(args)
-			flagData.Command = command
-		case "all":
-			command := all(args)
-			flagData.Command = command
-		case "serve":
-			command, profile := serve(args)
-			flagData.Command = command
-			flagData.Profile = profile
-		default:
-			log.Fatal("Please specify a valid subcommand.")
+	// Define subcommands
+	fetchCmd := flag.NewFlagSet("fetch", flag.ExitOnError)
+	registerGlobalFlags(fetchCmd)
+	installCmd := flag.NewFlagSet("install", flag.ExitOnError)
+	registerGlobalFlags(installCmd)
+	buildCmd := flag.NewFlagSet("build", flag.ExitOnError)
+	registerGlobalFlags(buildCmd)
+	cleanCmd := flag.NewFlagSet("clean", flag.ExitOnError)
+	registerGlobalFlags(cleanCmd)
+	allCmd := flag.NewFlagSet("all", flag.ExitOnError)
+	registerGlobalFlags(allCmd)
+	serveCmd := flag.NewFlagSet("serve", flag.ExitOnError)
+	registerGlobalFlags(serveCmd)
+	var profile string
+	serveCmd.StringVar(&profile, "p", "", "profile to use")
+
+	if len(os.Args) < 2 {
+		return errors.New("Please specify a subcommand.")
+	}
+
+	runCommand := func(name string, vars ...any) error {
+		// Validate the config file path first
+		if err := utils.CheckIsFile(vars[0].(string)); err != nil {
+			return err
 		}
-	} else {
-		log.Fatal("Please specify a subcommand.")
+		// Validate profile is present for serve command
+		if name == "serve" && vars[1].(string) == "" {
+			return errors.New("missing profile")
+		}
+
+		if command, ok := ac.commands[name]; ok {
+			command.Runner(vars...)
+		} else {
+			return errors.New("No command runner found for fetch")
+		}
+		return nil
 	}
-
-	// Validate the path first
-	if err := utils.CheckIsFile(configPath); err != nil {
-		return nil, err
+	// Parse flags based on command
+	switch os.Args[1] {
+	case "fetch":
+		fetchCmd.Parse(os.Args[2:])
+		return runCommand("fetch", configPath)
+	case "install":
+		installCmd.Parse(os.Args[2:])
+		return runCommand("install", configPath)
+	case "build":
+		buildCmd.Parse(os.Args[2:])
+		return runCommand("build", configPath)
+	case "clean":
+		cleanCmd.Parse(os.Args[2:])
+		return runCommand("clean", configPath)
+	case "all":
+		allCmd.Parse(os.Args[2:])
+		return runCommand("all", configPath)
+	case "serve":
+		serveCmd.Parse(os.Args[2:])
+		return runCommand("serve", configPath, profile)
+	default:
+		return errors.New("Please specify a valid subcommand.")
 	}
-
-	flagData.ConfigPath = configPath
-
-	return flagData, nil
 }
 
 func registerGlobalFlags(fset *flag.FlagSet) {
 	flag.VisitAll(func(f *flag.Flag) {
 		fset.Var(f.Value, f.Name, f.Usage)
 	})
-}
-
-func fetch(args []string) types.Action {
-	flag := flag.NewFlagSet("fetch", flag.ExitOnError)
-	registerGlobalFlags(flag)
-	flag.Parse(args)
-	return utils.FETCH
-}
-
-func install(args []string) types.Action {
-	flag := flag.NewFlagSet("install", flag.ExitOnError)
-	registerGlobalFlags(flag)
-	flag.Parse(args)
-	return utils.INSTALL
-}
-
-func build(args []string) types.Action {
-	flag := flag.NewFlagSet("build", flag.ExitOnError)
-	registerGlobalFlags(flag)
-	flag.Parse(args)
-	return utils.BUILD
-}
-
-func clean(args []string) types.Action {
-	flag := flag.NewFlagSet("clean", flag.ExitOnError)
-	registerGlobalFlags(flag)
-	flag.Parse(args)
-	return utils.CLEAN
-}
-
-func all(args []string) types.Action {
-	flag := flag.NewFlagSet("all", flag.ExitOnError)
-	registerGlobalFlags(flag)
-	flag.Parse(args)
-	return utils.REPO_ALL
-}
-
-func serve(args []string) (types.Action, string) {
-	flag := flag.NewFlagSet("serve", flag.ExitOnError)
-	var profile = flag.String("p", "", "profile to use")
-	registerGlobalFlags(flag)
-	flag.Parse(args)
-	if *profile == "" {
-		log.Fatal("missing profile flag in serve command")
-	}
-	return utils.PROXY_SERVER, *profile
 }

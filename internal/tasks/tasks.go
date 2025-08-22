@@ -2,12 +2,12 @@ package tasks
 
 import (
 	"fmt"
-	"titan/internal/container"
+	"titan/internal/core"
 	"titan/internal/utils"
 	"titan/pkg/types"
 )
 
-func StartTasks(errorChannel chan error, container *container.Container) {
+func StartTasks(errorChannel chan error, container *core.Container) {
 
 	for _, task := range container.ConfigData.Profile.Tasks {
 		go func() {
@@ -36,7 +36,7 @@ func StartTasks(errorChannel chan error, container *container.Container) {
 	}
 }
 
-func getApp(container *container.Container, appName string) (*types.Application, error) {
+func getApp(container *core.Container, appName string) (*types.Application, error) {
 	if app, found := container.ConfigData.Config.Server.Applications[appName]; found {
 		return &app, nil
 	}

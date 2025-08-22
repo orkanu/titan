@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
-	"titan/internal/container"
+	"titan/internal/core"
 )
 
 type Route struct {
@@ -100,7 +100,7 @@ func buildRoutes(proxyConfig map[string]struct {
 	return routes, nil
 }
 
-func StartProxy(errorChannel chan error, container *container.Container) {
+func StartProxy(errorChannel chan error, container *core.Container) {
 	serverConfig := container.ConfigData.Config.Server
 	routes, err := buildRoutes(serverConfig.Routes)
 	if err != nil {

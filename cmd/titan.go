@@ -9,21 +9,53 @@ import (
 	"sync"
 	"syscall"
 	"titan/internal/actions"
-	"titan/internal/container"
+	"titan/internal/core"
 	"titan/internal/proxy"
 	"titan/internal/tasks"
 	"titan/internal/utils"
 	"titan/pkg/flags"
+	"titan/pkg/types"
 )
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flagData, err := flags.ParseFlags()
-	if err != nil {
-		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
-		os.Exit(1)
+	repoRunner := func(action types.Action) func(vars ...any) error {
+		return func(vars ...any) error {
+			options := core.ContainerOptions{
+				CommandAction: action,
+				ConfigPath:    vars[0].(string),
+			}
+			container := core.NewContainer(options)
+			defer container.CleanUp()
+
+			processRepositoryCommand(container)
+			return nil
+		}
+	}
+	commandOptions := flags.AppCommandsOptions{
+		Commands: map[string]flags.Command{
+			"fetch":   {Runner: repoRunner(utils.FETCH)},
+			"install": {Runner: repoRunner(utils.INSTALL)},
+			"build":   {Runner: repoRunner(utils.BUILD)},
+			"clean":   {Runner: repoRunner(utils.CLEAN)},
+			"all":     {Runner: repoRunner(utils.REPO_ALL)},
+			"serve": {
+				Runner: func(vars ...any) error {
+					options := core.ContainerOptions{
+						CommandAction: utils.PROXY_SERVER,
+						Profile:       vars[1].(string),
+						ConfigPath:    vars[0].(string),
+					}
+					container := core.NewContainer(options)
+					defer container.CleanUp()
+
+					processProxyCommand(ctx, container)
+					return nil
+				},
+			},
+		},
 	}
 
 	// Handle SIGINT/SIGTERM
@@ -35,22 +67,15 @@ func main() {
 		cancel()
 	}()
 
-	options := container.ContainerOptions{
-		CommandAction: flagData.Command,
-		Profile:       flagData.Profile,
-		ConfigPath:    flagData.ConfigPath,
-	}
-	container := container.NewContainer(options)
-	defer container.CleanUp()
-
-	if container.Command.Action == utils.PROXY_SERVER {
-		processProxyCommand(ctx, container)
-	} else {
-		processRepositoryCommand(container)
+	appComands := flags.NewAppCommands(&commandOptions)
+	err := appComands.Run()
+	if err != nil {
+		utils.PrintlnRed(fmt.Sprintf("Error parsing flags: %v", err))
+		os.Exit(1)
 	}
 }
 
-func processProxyCommand(ctx context.Context, container *container.Container) {
+func processProxyCommand(ctx context.Context, container *core.Container) {
 
 	// Create unbuffered error channel for proxy server and tasks
 	errorChannel := make(chan error)
@@ -78,7 +103,7 @@ func processProxyCommand(ctx context.Context, container *container.Container) {
 	fmt.Println("All workers have stopped.")
 }
 
-func processRepositoryCommand(container *container.Container) {
+func processRepositoryCommand(container *core.Container) {
 	// Create a WaitGroup to wait for all workers to finish
 	var wg sync.WaitGroup
 
