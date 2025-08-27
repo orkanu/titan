@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"fmt"
 	"log/slog"
 	"slices"
 	"titan/internal/utils"
@@ -28,11 +27,9 @@ func (ia InstallAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ia.commands, command)
 }
 
-func (ia InstallAction) Execute(logger *slog.Logger, repoPath string, projectName string, env []string) error {
-	options := utils.NewExecCommandOptions(env, repoPath, "pnpm", "install", "--frozen-lockfile", "--prefer-offline")
-	logger.Info("Action [install]", "project", projectName)
-	if err := utils.ExecCommand(options); err != nil {
-		return fmt.Errorf("Error executing install action script: %v", err)
-	}
-	return nil
+func (ia InstallAction) Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error {
+	defaultScript := "pnpm install --frozen-lockfile --prefer-offline"
+	scriptFromConfig := getScriptFromConfig(ia.name, repoActions, nil, defaultScript, logger)
+
+	return executeScript(ia.name, scriptFromConfig, logger, repoPath, projectName, env)
 }

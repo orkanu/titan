@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"fmt"
 	"log/slog"
 	"slices"
 	"titan/internal/utils"
@@ -29,15 +28,12 @@ func (fa FetchAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(fa.commands, command)
 }
 
-func (fa FetchAction) Execute(logger *slog.Logger, repoPath string, projectName string, env []string) error {
-	// create temp shell script
-	script := `#!/bin/bash
-		set -e
+func (fa FetchAction) Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error {
+	defaultScript := `
 		git fetch -p && git pull
-  		git fetch --tags --force && git fetch --prune --prune-tags`
-	logger.Info("Action [fetch]", "project", projectName)
-	if err := utils.ExecScript(script, env, repoPath); err != nil {
-		return fmt.Errorf("Error executing fetch action script: %v", err)
-	}
-	return nil
+		git fetch --tags --force && git fetch --prune --prune-tags
+	`
+	scriptFromConfig := getScriptFromConfig(fa.name, repoActions, nil, defaultScript, logger)
+
+	return executeScript(fa.name, scriptFromConfig, logger, repoPath, projectName, env)
 }

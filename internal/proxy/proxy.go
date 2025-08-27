@@ -120,7 +120,7 @@ func StartProxy(errorChannel chan error, container *core.Container) {
 
 	go func() {
 		httpAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.Port)
-		container.Logger.Info("Starting HTTP server", "address", httpAddr)
+		container.Logger.Info("starting HTTP server", "address", httpAddr)
 		if err := http.ListenAndServe(httpAddr, httpMux); err != nil {
 			errorChannel <- err
 		}
@@ -129,7 +129,7 @@ func StartProxy(errorChannel chan error, container *core.Container) {
 	go func() {
 		if serverConfig.SSL.Cert != "" && serverConfig.SSL.Key != "" {
 			httpsAddr := fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.SSL.Port)
-			container.Logger.Info("Starting HTTPS server", "address", httpsAddr)
+			container.Logger.Info("starting HTTPS server", "address", httpsAddr)
 			if err := http.ListenAndServeTLS(httpsAddr, serverConfig.SSL.Cert, serverConfig.SSL.Key, httpMux); err != nil {
 				errorChannel <- err
 			}

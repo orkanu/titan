@@ -51,9 +51,21 @@ type Versions struct {
 	PNPM string `yaml:"pnpm"`
 }
 
+type RepoCommands struct {
+	Value     string `yaml:"value"`
+	Condition string `yaml:"condition,omitempty"`
+}
+
+type RepoAction struct {
+	Commands []RepoCommands `yaml:"commands"`
+}
+
 // Config struct for titan
 type Config struct {
 	Versions Versions `yaml:"versions"`
+
+	// Repository actions
+	RepoActions map[string]RepoAction `yaml:"repo-actions"`
 
 	// List of respositories
 	Repositories map[string]string `yaml:"repositories"`

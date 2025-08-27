@@ -49,13 +49,13 @@ func NewContainer(options ContainerOptions) *Container {
 	// Load configuration
 	config, err := config.NewConfig(options.ConfigPath)
 	if err != nil {
-		options.Logger.Error("Error retrieving configuration", "error", err)
+		options.Logger.Error("failed retrieving configuration", "error", err)
 		os.Exit(1)
 	}
 	// Setup nvm and pnpm to use as environment on other shell executions
 	env, err := utils.CaptureEnvironment(config.Versions)
 	if err != nil {
-		options.Logger.Error("Error setting up shared bash environment", "error", err)
+		options.Logger.Error("failure setting up shared bash environment", "error", err)
 		os.Exit(1)
 	}
 

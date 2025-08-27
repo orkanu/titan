@@ -99,14 +99,14 @@ func main() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigCh
-		logger.Info("Inititation shutdown - received signal", "signal", sig)
+		logger.Info("inititation shutdown - received signal", "signal", sig)
 		cancel()
 	}()
 
 	appComands := flags.NewAppCommands(&commandOptions)
 	err := appComands.Run()
 	if err != nil {
-		logger.Error("Error parsing flags", "error", err)
+		logger.Error("failed parsing flags", "error", err)
 		os.Exit(1)
 	}
 }
@@ -119,7 +119,7 @@ func processProxy(ctx context.Context, container *core.Container) {
 	profileData, found := container.ConfigData.Config.Server.Profiles[container.Command.Profile]
 	if !found {
 		// TODO - need to deal with this potential error properly
-		container.Logger.Info("Profile not found in config", "profile", container.Command.Profile)
+		container.Logger.Info("profile not found in config", "profile", container.Command.Profile)
 		os.Exit(1)
 	}
 	container.ConfigData.Profile = profileData
@@ -136,7 +136,7 @@ func processProxy(ctx context.Context, container *core.Container) {
 	case <-ctx.Done():
 		container.Logger.Info("context canceled, shutting down")
 	}
-	container.Logger.Info("All workers have stopped")
+	container.Logger.Info("all workers have stopped")
 }
 
 func processCommand(container *core.Container) {
@@ -159,10 +159,10 @@ func processCommand(container *core.Container) {
 	}
 
 	// Get only actions required based on command passed to the Titan
-	var a []actions.Action
+	var actionList []actions.Action
 	for _, actionToCheck := range availableActions {
 		if actionToCheck.ShouldExecute(container.Command.Action) {
-			a = append(a, actionToCheck)
+			actionList = append(actionList, actionToCheck)
 		}
 	}
 
@@ -171,9 +171,11 @@ func processCommand(container *core.Container) {
 	for _, repository := range container.ConfigData.Config.Repositories {
 		wg.Go(func() {
 			repoName := repoName(repository)
+			repoActions := container.ConfigData.Config.RepoActions
+			sharedEnv := container.SharedEnvironment
 			// Run actions one after the other. Those should be ordered in the array
-			for _, act := range a {
-				err := act.Execute(container.Logger, repository, repoName, container.SharedEnvironment)
+			for _, action := range actionList {
+				err := action.Execute(repoActions, container.Logger, repository, repoName, sharedEnv)
 				if err != nil {
 					errorChannel <- err
 					// Stop procession further actions
@@ -190,7 +192,7 @@ func processCommand(container *core.Container) {
 	// Select loop to wait for signals or errors
 	select {
 	case <-waitCh:
-		container.Logger.Debug("WaitGroup finished")
+		container.Logger.Debug("waitGroup finished")
 	case err := <-errorChannel:
 		container.Logger.Error("fatal error", "error", err)
 		// cancel() // Cancel the context to stop the workers
@@ -204,13 +206,13 @@ func processCommand(container *core.Container) {
 	}
 
 	if len(errors) > 0 {
-		container.Logger.Error("Some actions failed:")
+		container.Logger.Error("some actions failed:")
 		for _, err := range errors {
 			container.Logger.Error(fmt.Sprintf("  - %v", err))
 		}
 		os.Exit(1)
 	} else {
-		container.Logger.Debug("All actions completed")
+		container.Logger.Debug("all actions completed")
 	}
 }
 func repoName(repository string) string {

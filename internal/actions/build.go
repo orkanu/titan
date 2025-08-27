@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"fmt"
 	"log/slog"
 	"slices"
 	"titan/internal/utils"
@@ -28,11 +27,9 @@ func (ba BuildAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ba.commands, command)
 }
 
-func (ba BuildAction) Execute(logger *slog.Logger, repoPath string, projectName string, env []string) error {
-	options := utils.NewExecCommandOptions(env, repoPath, "pnpm", "run", "build:local")
-	logger.Info("Action [build]", "project", projectName)
-	if err := utils.ExecCommand(options); err != nil {
-		return fmt.Errorf("Error executing build action script: %v", err)
-	}
-	return nil
+func (ba BuildAction) Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error {
+	defaultScript := "pnpm run build:local"
+	scriptFromConfig := getScriptFromConfig(ba.name, repoActions, nil, defaultScript, logger)
+
+	return executeScript(ba.name, scriptFromConfig, logger, repoPath, projectName, env)
 }

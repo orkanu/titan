@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"fmt"
 	"log/slog"
 	"slices"
 	"titan/internal/utils"
@@ -28,21 +27,16 @@ func (ca CleanAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ca.commands, command)
 }
 
-func (ca CleanAction) Execute(logger *slog.Logger, repoPath string, projectName string, env []string) error {
-	// create temp shell script
-	cleanYalc := ""
-	if projectName == "cbs-residential-web" {
-		cleanYalc = "rm -rf ~/.yalc/packages/@wavelength"
-	}
-	script := fmt.Sprintf(`#!/bin/bash
-		set -e
+func (ca CleanAction) Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error {
+
+	defaultScript := `
 		find $(pwd) -maxdepth 3 -name "node_modules" -type d -exec rm -rf {} +
-		find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
-		%v
-		`, cleanYalc)
-	logger.Info("Action [clean]", "project", projectName)
-	if err := utils.ExecScript(script, env, repoPath); err != nil {
-		return fmt.Errorf("Error executing clean action script: %v", err)
+        find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
+	`
+	ctx := map[string]any{
+		"projectName": projectName,
 	}
-	return nil
+	scriptFromConfig := getScriptFromConfig(ca.name, repoActions, ctx, defaultScript, logger)
+
+	return executeScript(ca.name, scriptFromConfig, logger, repoPath, projectName, env)
 }

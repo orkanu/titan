@@ -23,7 +23,7 @@ func StartTasks(errorChannel chan error, container *core.Container) {
 				errorChannel <- err
 				return
 			}
-			container.Logger.Info("Action executed on project", "action", task.Action, "project", app.Name)
+			container.Logger.Info("task executed on project", "task", task.Action, "project", app.Name)
 
 			options := utils.NewExecCommandOptions(container.SharedEnvironment, app.Path, action.Command, action.Args...)
 			err = utils.ExecCommand(options)
