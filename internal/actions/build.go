@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"log/slog"
 	"slices"
 	"titan/internal/utils"
 	"titan/pkg/types"
@@ -27,9 +26,9 @@ func (ba BuildAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ba.commands, command)
 }
 
-func (ba BuildAction) Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error {
+func (ba BuildAction) Execute(options *ExecOptions) error {
 	defaultScript := "pnpm run build:local"
-	scriptFromConfig := getScriptFromConfig(ba.name, repoActions, nil, defaultScript, logger)
+	scriptFromConfig := getScriptFromConfig(ba.name, options.repoAction, nil, defaultScript, options.logger)
 
-	return executeScript(ba.name, scriptFromConfig, logger, repoPath, projectName, env)
+	return executeScript(ba.name, scriptFromConfig, options.logger, options.repoPath, options.projectName, options.env)
 }

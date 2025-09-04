@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"log/slog"
 	"slices"
 	"titan/internal/utils"
 	"titan/pkg/types"
@@ -28,12 +27,12 @@ func (fa FetchAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(fa.commands, command)
 }
 
-func (fa FetchAction) Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error {
+func (fa FetchAction) Execute(options *ExecOptions) error {
 	defaultScript := `
 		git fetch -p && git pull
 		git fetch --tags --force && git fetch --prune --prune-tags
 	`
-	scriptFromConfig := getScriptFromConfig(fa.name, repoActions, nil, defaultScript, logger)
+	scriptFromConfig := getScriptFromConfig(fa.name, options.repoAction, nil, defaultScript, options.logger)
 
-	return executeScript(fa.name, scriptFromConfig, logger, repoPath, projectName, env)
+	return executeScript(fa.name, scriptFromConfig, options.logger, options.repoPath, options.projectName, options.env)
 }

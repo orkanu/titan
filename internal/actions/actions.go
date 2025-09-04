@@ -9,6 +9,33 @@ import (
 	"titan/pkg/types"
 )
 
+type ExecOptions struct {
+	logger        *slog.Logger
+	repoAction    *types.RepoAction
+	repoPath      string
+	projectName   string
+	env           []string
+	scriptsOutput string
+}
+
+func NewExecOptions(
+	logger *slog.Logger,
+	env []string,
+	repoAction *types.RepoAction,
+	repoPath string,
+	projectName string,
+	scriptsOutput string,
+) *ExecOptions {
+	return &ExecOptions{
+		logger:        logger,
+		env:           env,
+		repoAction:    repoAction,
+		repoPath:      repoPath,
+		projectName:   projectName,
+		scriptsOutput: scriptsOutput,
+	}
+}
+
 // Action defines what an action is
 type Action interface {
 	// Name gives the name of the action
@@ -16,14 +43,14 @@ type Action interface {
 	// ShouldExecute evaluates is the action has to be executed based on the command requested
 	ShouldExecute(command types.Action) bool
 	// Execute executes the action
-	Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error
+	Execute(options *ExecOptions) error
 }
 
-func getScriptFromConfig(actionName string, repoActions map[string]types.RepoAction, parserCtx map[string]any, defaultScript string, logger *slog.Logger) string {
+func getScriptFromConfig(actionName string, repoAction *types.RepoAction, parserCtx map[string]any, defaultScript string, logger *slog.Logger) string {
 	var sb strings.Builder
-	if actions, ok := repoActions[actionName]; ok {
+	if repoAction != nil {
 		logger.Debug("using configured repository command actions", "command", actionName)
-		for _, cmd := range actions.Commands {
+		for _, cmd := range repoAction.Commands {
 			if cmd.Condition == "" {
 				sb.WriteString(cmd.Value)
 				continue

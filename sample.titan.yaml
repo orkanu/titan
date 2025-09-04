@@ -1,0 +1,200 @@
+versions:
+  node: v22.14.0
+  pnpm: 10.6.4
+
+repo-actions:
+  scripts-output: file
+  repositories:
+    app1: ~/code/repo1
+    app2: ~/code/repo1
+    app3: ~/code/repo1
+  actions:
+    fetch:
+      commands:
+        - value: |
+            git fetch -p && git pull
+            git fetch --tags --force && git fetch --prune --prune-tags
+    install:
+      commands:
+        - value: "pnpm install --frozen-lockfile --prefer-offline"
+    build:
+      commands:
+        - value: "pnpm run build:local"
+    clean:
+      commands:
+        - value: |
+            find $(pwd) -maxdepth 3 -name "node_modules" -type d -exec rm -rf {} +
+            find $(pwd) -maxdepth 3 -name "dist" -type d -exec rm -rf {} +
+        - value: "rm -rf ~/.yalc/packages/@wavelength"
+          condition: 'projectName == "repo1"'
+
+server:
+  host: mybox.superdomain.com
+  port: 8080
+  ssl:
+    port: 8443
+    cert: ./server.crt
+    key: ./server.key
+  routes:
+    server1:
+      source: /
+      target: http://localhost:5111
+    server1_modules:
+      source: /modules
+      target: http://localhost:5111/context-path/modules
+    server2:
+      source: /app2
+      target: http://localhost:4000/
+    server3:
+      source: /app3
+      target: http://localhost:5999/app3
+  applications:
+    # SERVERS
+    server1:
+      name: server1
+      path: ~/code/repo1
+      actions:
+        start:
+          command: pnpm
+          args:
+            - run
+            - start
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    server2:
+      name: server2
+      path: ~/code/repo2
+      actions:
+        start:
+          command: pnpm
+          args:
+            - run
+            - start
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    server3:
+      name: server3
+      path: ~/code/repo3
+      actions:
+        start:
+          command: pnpm
+          args:
+            - run
+            - start
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    # SHELLS
+    shell1:
+      name: shell1
+      path: ~/code/repo1/shells/shell1
+      actions:
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    shell2:
+      name: shell2
+      path: ~/code/repo1/shells/shell2
+      actions:
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    shell3:
+      name: shell3
+      path: ~/code/repo1/shells/shell3
+      actions:
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    # APPS
+    app1:
+      name: app1
+      path: ~/code/repo1/apps/app1
+      actions:
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    app2:
+      name: app2
+      path: ~/code/repo1/apps/app2
+      actions:
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+    # SHARED
+    shared1:
+      name: shared1
+      path: ~/code/repo1/shared/shared1
+      actions:
+        watch:
+          command: pnpm
+          args:
+            - run
+            - watch
+
+  profiles:
+    local:all:
+      parameters:
+        server1.port: "4000"
+        server2.port: "5111"
+        server3.port: "5999"
+      tasks:
+        # Servers
+        - type: application
+          name: server1
+          action: start
+        - type: application
+          name: server1
+          action: watch
+        - type: application
+          name: server2
+          action: start
+        - type: application
+          name: server2
+          action: watch
+        - type: application
+          name: server3
+          action: start
+        - type: application
+          name: server3
+          action: watch
+        # Shells
+        - type: application
+          name: shell1
+          action: watch
+        - type: application
+          name: shell2
+          action: watch
+        - type: application
+          name: shell3
+          action: watch
+        # Apps
+        - type: application
+          name: app1
+          action: watch
+        - type: application
+          name: app2
+          action: watch
+      routes:
+        - server1
+        - server1_modules
+        - server2
+        - server3

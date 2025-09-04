@@ -60,15 +60,20 @@ type RepoAction struct {
 	Commands []RepoCommands `yaml:"commands"`
 }
 
+type RepoActions struct {
+	// map[string]RepoAction
+	// List of respositories
+	ScriptsOutput string                 `yaml:"scripts-output,omitempty"`
+	Repositories  map[string]string      `yaml:"repositories"`
+	Actions       map[string]*RepoAction `yaml:"actions"`
+}
+
 // Config struct for titan
 type Config struct {
 	Versions Versions `yaml:"versions"`
 
 	// Repository actions
-	RepoActions map[string]RepoAction `yaml:"repo-actions"`
-
-	// List of respositories
-	Repositories map[string]string `yaml:"repositories"`
+	RepoActions RepoActions `yaml:"repo-actions,omitempty"`
 
 	// Proxy server configuration
 	Server Server `yaml:"server"`

@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"log/slog"
 	"slices"
 	"titan/internal/utils"
 	"titan/pkg/types"
@@ -27,9 +26,9 @@ func (ia InstallAction) ShouldExecute(command types.Action) bool {
 	return slices.Contains(ia.commands, command)
 }
 
-func (ia InstallAction) Execute(repoActions map[string]types.RepoAction, logger *slog.Logger, repoPath string, projectName string, env []string) error {
+func (ia InstallAction) Execute(options *ExecOptions) error {
 	defaultScript := "pnpm install --frozen-lockfile --prefer-offline"
-	scriptFromConfig := getScriptFromConfig(ia.name, repoActions, nil, defaultScript, logger)
+	scriptFromConfig := getScriptFromConfig(ia.name, options.repoAction, nil, defaultScript, options.logger)
 
-	return executeScript(ia.name, scriptFromConfig, logger, repoPath, projectName, env)
+	return executeScript(ia.name, scriptFromConfig, options.logger, options.repoPath, options.projectName, options.env)
 }

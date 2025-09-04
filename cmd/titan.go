@@ -148,7 +148,7 @@ func processCommand(container *core.Container) {
 	waitCh := make(chan struct{})
 
 	// Create buffered error channel for repository actions
-	errorChannel := make(chan error, len(container.ConfigData.Config.Repositories))
+	errorChannel := make(chan error, len(container.ConfigData.Config.RepoActions.Repositories))
 
 	// Slice with all the available actions
 	availableActions := []actions.Action{
@@ -159,23 +159,32 @@ func processCommand(container *core.Container) {
 	}
 
 	// Get only actions required based on command passed to the Titan
-	var actionList []actions.Action
+	var actionsToRun []actions.Action
 	for _, actionToCheck := range availableActions {
 		if actionToCheck.ShouldExecute(container.Command.Action) {
-			actionList = append(actionList, actionToCheck)
+			actionsToRun = append(actionsToRun, actionToCheck)
 		}
 	}
 
 	// Run actions concurrently for each repo
-	// container.ErrorChannel = make(chan error, len(container.ConfigData.Config.Repositories))
-	for _, repository := range container.ConfigData.Config.Repositories {
+	for _, repository := range container.ConfigData.Config.RepoActions.Repositories {
 		wg.Go(func() {
 			repoName := repoName(repository)
-			repoActions := container.ConfigData.Config.RepoActions
+			repositoryActionsConfig := container.ConfigData.Config.RepoActions.Actions
+			scriptsOutput := container.ConfigData.Config.RepoActions.ScriptsOutput
 			sharedEnv := container.SharedEnvironment
 			// Run actions one after the other. Those should be ordered in the array
-			for _, action := range actionList {
-				err := action.Execute(repoActions, container.Logger, repository, repoName, sharedEnv)
+			for _, actionToRun := range actionsToRun {
+				repoAction := repositoryActionsConfig[actionToRun.Name()]
+				options := actions.NewExecOptions(
+					container.Logger,
+					sharedEnv,
+					repoAction,
+					repository,
+					repoName,
+					scriptsOutput,
+				)
+				err := actionToRun.Execute(options)
 				if err != nil {
 					errorChannel <- err
 					// Stop procession further actions
