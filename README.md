@@ -1,5 +1,9 @@
 # Titan
-Wee CLI to help working with Sirius
+Wee CLI to help working with micro-frontends and/or micro-services. Its two main functions are:
+
+- It allows to have your apps under a reverse proxy
+- It has some functionalities to work with the repositories, like pulling/fetching or building
+the apps
 
 ## Roadmap
 

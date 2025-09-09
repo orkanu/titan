@@ -1,0 +1,28 @@
+{
+  "name": "@orkanu/titan",
+  "version": "0.1.0",
+  "description": "Wee CLI to help working with microfrontends",
+  "main": "index.js",
+  "bin": {
+    "titan": "./index.js"
+  },
+  "files": [
+    "bin",
+    "docs",
+    "index.js",
+    "README.md"
+  ],
+  "directories": {
+    "doc": "docs"
+  },
+  "keywords": [
+    "proxy",
+    "tasks",
+    "repository",
+    "actions",
+    "micro-frontends",
+    "micro-services"
+  ],
+  "author": "me",
+  "license": "MIT"
+}
