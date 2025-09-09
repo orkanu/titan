@@ -29,6 +29,7 @@ function getBinaryPath() {
   return path.join(
     __dirname,
     "bin",
+    "out",
     `${translatePlatform(platform)}-${translateArch(arch)}`,
     `${APP_NAME}${getExtension(platform)}`,
   );

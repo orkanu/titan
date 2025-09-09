@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Define the output directory
-OUTPUT_DIR=./bin
-
-# Create the output directory if it doesn't exist
-mkdir -p $OUTPUT_DIR
+OUTPUT_DIR=$1
 
 # Define the application name
 APP_NAME=titan
+
+echo "*************************************"
+echo "* Releasing $APP_NAME"
+echo "*************************************"
 
 # Platforms and architectures to build for
 platforms=("linux/amd64" "darwin/arm64" "windows/amd64")
@@ -22,13 +23,23 @@ for platform in "${platforms[@]}"; do
   DESTINATION=$OUTPUT_DIR/$GOOS-$GOARCH/$OUTPUT_NAME
   env GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 \
     go build -ldflags="-s -w" -trimpath -o $DESTINATION ./cmd/titan.go
-  if [ ! "$GOOS" = "windows" ]; then
-      echo "Setting executable permissions for $GOOS platform"
-      chmod 755 $DESTINATION
-  else
-      echo "Cannot set executable permissions for windows"
-  fi
 
+  # echo "Compress with UPX for $GOOS platform"
+  # case "$GOOS" in
+  #   linux*)     upx --best --lzma $DESTINATION || true;;
+  #   darwin*)    upx --best --lzma --force-macos $DESTINATION || true;;
+  #   windows*)   upx --best --lzma $DESTINATION || true;;
+  #   *)          echo "$0 - UNKNOWN:${GOOS}" && exit 1
+  # esac
+
+  case "$GOOS" in
+    linux*)     echo "Setting executable permissions for $GOOS platform" && chmod 755 $DESTINATION;;
+    darwin*)    echo "Setting executable permissions for $GOOS platform" && chmod 755 $DESTINATION;;
+    windows*)   echo "Cannot set executable permissions for windows";;
+    *)          echo "$0 - UNKNOWN:${GOOS}" && exit 1
+  esac
+
+  echo "Binary for $GOOS/$GOARCH can be found in $DESTINATION"
 done
 
 echo "Build completed. Binaries are located in the $OUTPUT_DIR directory."

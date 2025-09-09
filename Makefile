@@ -25,7 +25,8 @@ run-h:
 	go run ./cmd/titan.go help
 
 release:
-	./scripts/build.sh
+	mkdir -p ./bin
+	docker build --progress=plain --output ./bin .
 
 clean:
 	rm -rf ./bin

@@ -1,0 +1,18 @@
+# Folders to exclude
+./bin
+./git
+
+# Documentation
+./docs
+README.md
+
+# Files to exclude
+package.json
+index.js
+Makefile
+server.crt
+server.key
+sample.titan.yaml
+titan.yaml
+.gitignore
+Dockerfile
