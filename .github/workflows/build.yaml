@@ -19,6 +19,8 @@ jobs:
           fetch-depth: 0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          cleanup: true
       - name: Node.js
         uses: actions/setup-node@v5
         with:

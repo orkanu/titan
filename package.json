@@ -24,5 +24,13 @@
     "micro-services"
   ],
   "author": "Marc",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orkanu/titan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/orkanu/titan/issues"
+  },
+  "homepage": "https://github.com/orkanu/titan#readme"
 }
