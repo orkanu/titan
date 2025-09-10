@@ -2,7 +2,7 @@
 
 const os = require("os");
 const path = require("path");
-const { execFile } = require("child_process");
+const { spawn } = require("child_process");
 
 const APP_NAME = "titan";
 
@@ -41,16 +41,5 @@ const args = process.argv.slice(2);
 // Execute the binary
 const binaryPath = getBinaryPath();
 
-const child = execFile(binaryPath, args, (error, stdout, stderr) => {
-  if (error) {
-    console.error(`Error executing ${APP_NAME}: ${error.message}`);
-    process.exit(error.code);
-  }
-  if (stdout) process.stdout.write(stdout);
-  if (stderr) process.stderr.write(stderr);
-});
-
-child.on("error", (err) => {
-  console.error(`Failed to start subprocess: ${err.message}`);
-  process.exit(1);
-});
+const child = spawn(binaryPath, args, { stdio: "inherit" });
+child.on("exit", (code) => process.exit(code));
